@@ -1,0 +1,1449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>AXION</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: Apple-style workspace — frosted sidebar of companies, a canvas of rounded grouped cards, inset lists for actions, and a sheet that slides in for each item */
+:root{
+  --bg:#f5f5f7; --surface:#ffffff; --sunk:#f2f2f7; --fill:rgba(118,118,128,.12); --ink:#1d1d1f; --muted:#6e6e73; --faint:#8e8e93; --line:rgba(60,60,67,.14);
+  --glass:rgba(250,250,252,.78); --primary:#0071e3; --primary-h:#0077ed; --on-primary:#ffffff; --focus:#0071e3; --tint:rgba(0,113,227,.10);
+  --poc:#5e5ce6; --exp:#30b0c7; --ukb:#ff9f0a;
+  --red:#ff3b30; --red-bg:rgba(255,59,48,.12); --amber:#c46a00; --amber-bg:rgba(255,149,0,.14); --green:#248a3d; --green-bg:rgba(52,199,89,.14); --blue:#0066cc; --blue-bg:rgba(0,113,227,.10);
+  --shadow:0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05);
+  --shadow-lg:0 24px 60px rgba(0,0,0,.18);
+  --f-display:-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Segoe UI", system-ui, sans-serif;
+  --f-body:-apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  --r:18px; --r-sm:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#000000; --surface:#1c1c1e; --sunk:#2c2c2e; --fill:rgba(118,118,128,.24); --ink:#f5f5f7; --muted:#a1a1a6; --faint:#8e8e93; --line:rgba(84,84,88,.6);
+  --glass:rgba(28,28,30,.72); --primary:#0a84ff; --primary-h:#409cff; --on-primary:#ffffff; --focus:#0a84ff; --tint:rgba(10,132,255,.18);
+  --poc:#7d7aff; --exp:#64d2ff; --ukb:#ffb340;
+  --red:#ff453a; --red-bg:rgba(255,69,58,.18); --amber:#ffb340; --amber-bg:rgba(255,159,10,.18); --green:#30d158; --green-bg:rgba(48,209,88,.16); --blue:#64a8ff; --blue-bg:rgba(10,132,255,.18);
+  --shadow:0 0 0 1px rgba(255,255,255,.04); --shadow-lg:0 24px 60px rgba(0,0,0,.6);
+  color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#000000; --surface:#1c1c1e; --sunk:#2c2c2e; --fill:rgba(118,118,128,.24); --ink:#f5f5f7; --muted:#a1a1a6; --faint:#8e8e93; --line:rgba(84,84,88,.6);
+  --glass:rgba(28,28,30,.72); --primary:#0a84ff; --primary-h:#409cff; --on-primary:#ffffff; --focus:#0a84ff; --tint:rgba(10,132,255,.18);
+  --poc:#7d7aff; --exp:#64d2ff; --ukb:#ffb340;
+  --red:#ff453a; --red-bg:rgba(255,69,58,.18); --amber:#ffb340; --amber-bg:rgba(255,159,10,.18); --green:#30d158; --green-bg:rgba(48,209,88,.16); --blue:#64a8ff; --blue-bg:rgba(10,132,255,.18);
+  --shadow:0 0 0 1px rgba(255,255,255,.04); --shadow-lg:0 24px 60px rgba(0,0,0,.6);
+  color-scheme:dark; }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.47;letter-spacing:-.01em;margin:0;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit;letter-spacing:inherit}
+:focus-visible{outline:3px solid color-mix(in srgb, var(--focus) 55%, transparent);outline-offset:2px;border-radius:8px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;font-weight:700;letter-spacing:-.022em}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.app{display:grid;grid-template-columns:272px minmax(0,1fr);min-height:100vh}
+/* sidebar */
+.nav{background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-right:1px solid var(--line);padding:22px 12px 28px max(12px, env(safe-area-inset-left,0px));position:sticky;top:0;height:100vh;overflow:auto}
+.brand{padding:2px 10px 18px;display:flex;flex-direction:column;gap:1px}
+.brand b{font-family:var(--f-display);font-size:21px;font-weight:700;letter-spacing:-.025em}
+.brand span{color:var(--muted);font-size:12.5px}
+.nav a{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:9px;color:var(--ink);text-decoration:none;cursor:pointer;font-size:14px;transition:background .15s}
+.nav a:hover{background:var(--fill)}
+.nav a.on{background:var(--primary);color:#fff}
+.nav a.on .badge{background:rgba(255,255,255,.22);color:#fff}
+.nav a.on .dot{box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+.nav .grp{margin-top:20px}
+.nav .lbl{font-size:12px;font-weight:600;color:var(--faint);padding:0 10px 6px}
+.nav .co{font-weight:600}
+.nav .cl{padding-left:28px}
+.nav .tm{padding-left:44px;color:var(--muted);font-size:13.5px}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.nav .n{margin-left:auto;display:flex;gap:4px}
+.badge{font-size:12px;font-weight:500;min-width:22px;text-align:center;padding:1px 7px;border-radius:999px;background:var(--fill);color:var(--muted);font-variant-numeric:tabular-nums}
+.badge.red{background:var(--red);color:#fff}
+/* canvas */
+.main{min-width:0;padding-block:34px 72px;padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px))}
+.wrap{max-width:1160px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.mobnav{display:none}
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px;justify-content:space-between;padding:0 4px}
+.crumb{font-size:13px;color:var(--muted);font-weight:500;margin-bottom:4px}
+.crumb a{color:var(--primary)!important;text-decoration:none!important}
+.head h1{font-size:40px;line-height:1.08;letter-spacing:-.028em}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{border:0;background:var(--fill);border-radius:999px;padding:8px 17px;cursor:pointer;font-weight:500;font-size:14px;white-space:nowrap;color:var(--primary);transition:background .15s, transform .1s}
+.btn:hover{background:color-mix(in srgb, var(--fill) 100%, var(--ink) 6%)}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:var(--primary);color:var(--on-primary)}
+.btn.pri:hover{background:var(--primary-h)}
+.btn.sm{padding:5px 12px;font-size:13px}
+.btn.danger{color:var(--red)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.banner{padding:14px 18px;border-radius:14px;background:var(--amber-bg);color:var(--amber);font-weight:500}
+/* stat cards */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px}
+.kpi{background:var(--surface);border-radius:16px;padding:16px 18px 14px;display:flex;flex-direction:column;gap:2px;box-shadow:var(--shadow)}
+button.kpi{border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;width:100%;transition:transform .15s, box-shadow .15s}
+button.kpi:hover{transform:translateY(-2px);box-shadow:0 2px 4px rgba(0,0,0,.05),0 10px 28px rgba(0,0,0,.09)}
+button.kpi.sel{box-shadow:0 0 0 2px var(--primary), var(--shadow)}
+button.kpi .k::after{content:" ›";opacity:0;transition:opacity .15s}
+button.kpi:hover .k::after,button.kpi:focus-visible .k::after{opacity:1}
+.kpi .v{font-family:var(--f-display);font-size:34px;font-weight:700;letter-spacing:-.03em;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi .k{font-size:13px;color:var(--muted);font-weight:500}
+.kpi.red .v{color:var(--red)} .kpi.amber .v{color:var(--amber)} .kpi.green .v{color:var(--green)}
+.num{border:0;background:none;font:inherit;color:var(--primary);cursor:pointer;padding:2px 8px;margin:-2px -8px;border-radius:999px;font-weight:600}
+.num.late{color:var(--red)}
+.num:hover{background:var(--tint)}
+/* cards */
+.panel{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.panel>header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 22px 12px;flex-wrap:wrap}
+.panel>header h2{font-size:21px;letter-spacing:-.022em}
+.panel .sub{color:var(--muted);font-size:13px}
+.empty{padding:40px 20px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--ink);font-size:17px;font-weight:600;margin-bottom:4px}
+.tblwrap{overflow-x:auto;padding:0 8px 8px}
+table.sum{width:100%;border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums;min-width:720px}
+table.sum th{font-size:12px;color:var(--faint);font-weight:500;text-align:right;padding:8px 14px}
+table.sum th:first-child,table.sum td:first-child{text-align:left}
+table.sum td{padding:10px 14px;border-top:1px solid var(--line);text-align:right;font-size:14px}
+table.sum td:first-child{font-size:15px}
+table.sum tr[data-act]{cursor:pointer}
+table.sum tr[data-act]:hover td{background:var(--sunk)}
+table.sum tr.co td{font-weight:600;border-top-color:transparent;padding-top:16px}
+table.sum tr.co td:first-child{font-family:var(--f-display);font-size:17px}
+table.sum tr.cl td:first-child{padding-left:34px}
+table.sum tr.tm td:first-child{padding-left:54px;color:var(--muted)}
+.rag{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:10px;vertical-align:2px}
+.rag.r{background:var(--red)} .rag.a{background:#ff9500} .rag.g{background:#34c759}
+.zero{color:var(--faint);opacity:.6}
+/* filters */
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:4px 22px 14px}
+.filters input[type=search]{flex:1 1 220px;min-width:0}
+.inp,select.inp,textarea.inp{border:0;background:var(--fill);border-radius:var(--r-sm);padding:8px 12px;min-width:0;max-width:100%;outline:none;transition:box-shadow .15s}
+.inp:focus{box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent)}
+select.inp{appearance:none;-webkit-appearance:none;padding-right:30px;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 52%,calc(100% - 11px) 52%;background-size:5px 5px;background-repeat:no-repeat;cursor:pointer}
+textarea.inp{width:100%;resize:vertical}
+.chk{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
+.chk input{accent-color:var(--primary);width:17px;height:17px}
+/* inset action list */
+.rows{display:flex;flex-direction:column;margin:0 10px 10px;border-radius:14px;overflow:hidden}
+.rowh,.row{display:grid;grid-template-columns:100px minmax(0,1fr) 72px 128px 160px 92px 92px;gap:14px;align-items:start;padding:13px 14px}
+.rowh{font-size:12px;color:var(--faint);font-weight:500;padding-block:6px}
+.row{cursor:pointer;position:relative;border-top:1px solid var(--line);transition:background .12s;border-radius:12px}
+.rowh + .row{border-top-color:transparent}
+.row:hover{background:var(--sunk)}
+.row:hover + .row{border-top-color:transparent}
+.row .ref{font-family:var(--f-mono);font-size:12px;color:var(--faint);padding-top:3px}
+.row .t{font-weight:600;line-height:1.32;font-size:15px}
+.row .nba{font-size:13.5px;color:var(--muted);margin-top:3px}
+.row .nba b{font-weight:600;color:var(--primary)}
+.row .meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.row .ppl{font-size:13px;color:var(--muted)}
+.row .ppl b{color:var(--ink);font-weight:600;font-size:11px;background:var(--fill);border-radius:4px;padding:0 4px;margin-right:2px}
+.row .dt{font-size:13.5px;font-variant-numeric:tabular-nums;font-weight:500}
+.row .dt small{display:block;color:var(--faint);font-size:11.5px;font-weight:400}
+.row.closed{opacity:.62}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;padding:2px 9px;border-radius:999px;background:var(--fill);color:var(--muted);white-space:nowrap}
+.chip.red{background:var(--red-bg);color:var(--red)} .chip.amber{background:var(--amber-bg);color:var(--amber)} .chip.green{background:var(--green-bg);color:var(--green)} .chip.blue{background:var(--blue-bg);color:var(--blue)}
+.pri{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;display:inline-block;font-variant-numeric:tabular-nums}
+.pri.P1{background:var(--red);color:#fff} .pri.P2{background:var(--red-bg);color:var(--red)} .pri.P3{background:var(--amber-bg);color:var(--amber)} .pri.P4{background:var(--fill);color:var(--muted)}
+.st{font-size:13.5px;display:inline-flex;align-items:center;gap:7px;font-weight:500}
+.st::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--faint)}
+.st.ip::before{background:var(--primary)} .st.bl::before{background:var(--red)} .st.aw::before{background:#ff9500} .st.dn::before{background:#34c759}
+.late{color:var(--red)}
+.cobar{position:absolute;left:4px;top:16px;width:4px;height:18px;border-radius:2px}
+.att{display:flex;flex-direction:column;margin:0 10px 10px}
+.att .row{grid-template-columns:100px minmax(0,1fr) 72px 220px}
+.att .row:first-child{border-top-color:transparent}
+.closedrow .t{text-decoration:none}
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.28);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);z-index:40}
+.drawer{position:fixed;top:10px;right:10px;bottom:10px;width:min(780px,calc(100% - 20px));background:var(--bg);z-index:41;display:flex;flex-direction:column;border-radius:22px;box-shadow:var(--shadow-lg);overflow:hidden;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-right:env(safe-area-inset-right,0px)}
+.dhead{display:flex;align-items:flex-start;gap:12px;padding:22px 26px 16px;background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--line)}
+.dhead .x{margin-left:auto}
+.dhead h2{font-size:24px;letter-spacing:-.025em;line-height:1.2}
+.dbody{overflow:auto;padding:18px 18px 30px;display:flex;flex-direction:column;gap:14px}
+.sect{display:flex;flex-direction:column;gap:12px;background:var(--surface);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow)}
+.sect>h3{font-size:13px;font-family:var(--f-body);color:var(--muted);font-weight:600;letter-spacing:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 16px}
+.fld{display:flex;flex-direction:column;gap:5px;min-width:0}
+.fld>span{font-size:12.5px;color:var(--muted);font-weight:500}
+.fld>span em{font-style:normal;color:var(--faint);font-weight:400}
+.fld .inp{width:100%}
+.hint{font-size:12.5px;color:var(--faint)}
+.arci{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.picker{background:var(--fill);border-radius:var(--r-sm);padding:6px;display:flex;flex-wrap:wrap;gap:5px;align-items:center;min-height:40px}
+.picker select{border:0;background:transparent;flex:1 1 120px;min-width:0;padding:4px;color:var(--primary);cursor:pointer;outline:none}
+.pchip{display:inline-flex;align-items:center;gap:4px;background:var(--surface);border-radius:999px;padding:3px 5px 3px 11px;font-size:13px;font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.pchip.client{background:var(--blue-bg);color:var(--blue);box-shadow:none}
+.pchip button{border:0;background:var(--fill);border-radius:50%;width:18px;height:18px;display:inline-grid;place-items:center;cursor:pointer;color:inherit;padding:0;font-size:12px;line-height:1}
+.letter{font-weight:700;font-size:11px;background:var(--primary);color:#fff;border-radius:5px;padding:1px 5px;margin-right:6px}
+.callout{border-radius:14px;padding:12px 16px;font-size:14px;background:var(--surface);box-shadow:var(--shadow)}
+.callout.amber{background:var(--amber-bg);color:var(--amber);box-shadow:none}
+.callout.red{background:var(--red-bg);color:var(--red);box-shadow:none}
+.dfoot{display:flex;gap:10px;flex-wrap:wrap;padding:14px 22px;background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--line)}
+/* trail */
+.trail{display:flex;flex-direction:column;border-left:2px solid var(--line);margin-left:7px;margin-top:4px}
+.ev{position:relative;padding:0 0 16px 18px}
+.ev::before{content:"";position:absolute;left:-7px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--faint)}
+.ev.update::before{border-color:var(--primary);background:var(--primary)}
+.ev.system::before{border-color:var(--line);background:var(--sunk)}
+.ev .who{font-size:12.5px;color:var(--muted)}
+.ev .who b{color:var(--ink);font-weight:600}
+.ev .txt{white-space:pre-wrap;margin-top:3px;overflow-wrap:anywhere}
+.ev.system .txt{color:var(--muted);font-size:13.5px}
+.compose{display:flex;flex-direction:column;gap:10px;background:var(--sunk);border-radius:14px;padding:12px}
+.compose .inp{background:var(--surface)}
+.compose .rowx{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+/* weekly */
+.wk{display:grid;grid-template-columns:340px minmax(0,1fr);gap:18px;align-items:start}
+.wk .ctl{padding:20px;display:flex;flex-direction:column;gap:14px}
+.mail{padding:8px 26px 26px;font-size:15px;line-height:1.55;overflow-wrap:anywhere}
+.mail h2{font-size:22px;margin:0 0 8px}
+.mail h3{font-size:13px;margin:22px 0 8px;font-family:var(--f-body);color:var(--muted);font-weight:600;letter-spacing:0}
+.mail ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:10px}
+.mail table{border-collapse:separate;border-spacing:0;margin:10px 0;font-variant-numeric:tabular-nums;background:var(--sunk);border-radius:12px;overflow:hidden}
+.mail td,.mail th{padding:6px 14px;text-align:left;font-size:13.5px}
+.mail th{color:var(--muted);font-weight:500;font-size:12px}
+.mail td{font-family:var(--f-display);font-size:20px;font-weight:700}
+.seg{display:inline-flex;background:var(--fill);border-radius:10px;padding:2px;gap:2px}
+.seg button{border:0;background:transparent;padding:5px 14px;cursor:pointer;border-radius:8px;font-size:13.5px;font-weight:500;transition:background .15s}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.04)}
+.seg button[disabled]{opacity:.4;cursor:not-allowed}
+.hist{display:flex;flex-direction:column;padding:0 10px 10px}
+.hist div{padding:10px 12px;border-top:1px solid var(--line);font-size:14px;display:flex;gap:12px;flex-wrap:wrap}
+/* setup */
+.setgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+.plist{display:flex;flex-direction:column;padding:0 10px 10px}
+.prow{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1.2fr) auto;gap:12px;padding:10px 12px;border-top:1px solid var(--line);align-items:center;font-size:14px}
+.prow .em{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.form{padding:6px 22px 20px;display:flex;flex-direction:column;gap:12px}
+.tree{padding:4px 18px 18px;display:flex;flex-direction:column;gap:12px}
+.tree .c{background:var(--sunk);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.tree .c>div{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tree .c .inp{background:var(--surface)}
+.tree .cl2{padding-left:18px;display:flex;flex-direction:column;gap:8px}
+.tree .cl2>div{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.legend{padding:4px 22px 22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;font-size:14px;color:var(--muted)}
+.legend b{font-size:13px;display:block;margin-bottom:3px;color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);color:var(--ink);padding:11px 20px;border-radius:999px;z-index:60;font-weight:500;box-shadow:var(--shadow-lg);max-width:calc(100% - 32px)}
+.arm{background:var(--red)!important;color:#fff!important}
+@media (max-width:1000px){
+  .rowh{display:none}
+  .row{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"ref t pri" "ref ppl st" "ref dt dt"}
+  .row>.c-ref{grid-area:ref}.row>.c-t{grid-area:t}.row>.c-pri{grid-area:pri}.row>.c-st{grid-area:st}.row>.c-ppl{grid-area:ppl}
+  .row>.c-nbd,.row>.c-due{grid-area:dt;display:inline}
+  .row>.c-due{display:none}
+  .att .row{grid-template-columns:auto minmax(0,1fr) auto}
+  .wk,.setgrid{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .nav{display:none}
+  .mobnav{display:flex;gap:8px;align-items:center}
+  .mobnav select{flex:1}
+  .prow{grid-template-columns:minmax(0,1fr) auto}
+  .prow .em,.prow .rl{display:none}
+  .head h1{font-size:32px}
+  .drawer{top:0;right:0;bottom:0;width:100%;border-radius:0}
+}
+@media (max-width:520px){ .row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"t pri" "ppl st" "dt dt"} .row>.c-ref{display:none} .head h1{font-size:28px} .kpis{grid-template-columns:repeat(2,minmax(0,1fr))} .panel>header,.filters{padding-left:16px;padding-right:16px} }
+@media (prefers-reduced-motion:no-preference){ .drawer{animation:sheet .32s cubic-bezier(.32,.72,0,1)} @keyframes sheet{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}} .scrim{animation:fade .2s ease-out} @keyframes fade{from{opacity:0}to{opacity:1}} }
+@media (prefers-reduced-motion:reduce){ button.kpi:hover{transform:none} }
+
+/* present mode — Keynote-style, always dark */
+.present{--s-bg:#000;--s-ink:#f5f5f7;--s-muted:#a1a1a6;--s-faint:#6e6e73;--s-line:rgba(255,255,255,.12);--s-card:#1c1c1e;--s-red:#ff453a;--s-amber:#ffb340;--s-green:#30d158;--s-blue:#64a8ff;
+  position:fixed;inset:0;z-index:80;background:var(--s-bg);color:var(--s-ink);display:flex;flex-direction:column;color-scheme:dark;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+.p-bar{display:flex;align-items:center;gap:14px;padding:12px max(16px,env(safe-area-inset-left,0px)) 8px;font-size:13px;color:var(--s-muted)}
+.p-title{font-weight:600;color:var(--s-ink)}
+.p-sp{flex:1}
+.p-btn{border:0;background:rgba(255,255,255,.12);color:var(--s-ink);border-radius:999px;padding:6px 14px;cursor:pointer;font-weight:500;font-size:13px}
+.p-btn:hover{background:rgba(255,255,255,.2)}
+.p-stage-wrap{position:relative;flex:1;min-height:0;margin:0 16px}
+.p-stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center;transform:translate(-50%,-50%) scale(.5)}
+.slide{width:1280px;height:720px;padding:72px 96px;display:flex;flex-direction:column;justify-content:center;gap:18px;border-radius:24px;background:radial-gradient(120% 90% at 85% 0%, #1a1f2e 0%, #000 60%);box-shadow:0 0 0 1px var(--s-line);overflow:hidden}
+@media (prefers-reduced-motion:no-preference){ .slide{animation:slidein .35s cubic-bezier(.2,.8,.2,1)} @keyframes slidein{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}} }
+.s-kicker{font-size:22px;font-weight:600;color:var(--s-muted);letter-spacing:-.01em}
+.s-hero{font-family:var(--f-display);font-size:96px;line-height:1.02;letter-spacing:-.04em;font-weight:700;background:linear-gradient(180deg,#fff 30%,#b8b8c0);-webkit-background-clip:text;background-clip:text;color:transparent}
+.s-hero.sm{font-size:84px}
+.s-lede{font-size:26px;color:var(--s-muted);letter-spacing:-.01em}
+.s-h{font-family:var(--f-display);font-size:56px;letter-spacing:-.035em;line-height:1.05;margin-bottom:10px}
+.s-pg{font-size:26px;color:var(--s-faint);font-weight:500;letter-spacing:0}
+.s-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:40px}
+.s-stat{background:var(--s-card);border-radius:22px;padding:24px 26px;display:flex;flex-direction:column;gap:4px}
+.s-stat b{font-family:var(--f-display);font-size:64px;line-height:1;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.s-stat span{font-size:18px;color:var(--s-muted)}
+.s-stat.red b{color:var(--s-red)} .s-stat.amber b{color:var(--s-amber)} .s-stat.green b{color:var(--s-green)}
+.s-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.s-list li{background:var(--s-card);border-radius:18px;padding:14px 22px}
+.s-top{display:flex;align-items:center;gap:12px;font-size:15px}
+.s-ref{font-family:var(--f-mono);color:var(--s-faint)}
+.s-c{color:var(--s-muted);margin-left:auto;font-size:15px}
+.s-t{font-size:24px;font-weight:600;letter-spacing:-.015em;line-height:1.25;margin-top:4px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.s-m{font-size:17px;color:var(--s-muted);margin-top:3px}
+.s-n{font-size:17px;color:var(--s-ink);opacity:.85;margin-top:2px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.s-red{color:var(--s-red)} .s-amber{color:var(--s-amber)} .s-green{color:var(--s-green)}
+.s-empty{font-size:30px;color:var(--s-muted)}
+.s-health{display:flex;flex-direction:column;gap:8px}
+.s-hrow{display:grid;grid-template-columns:22px minmax(0,1fr) 130px 120px 140px 140px;align-items:center;gap:16px;background:var(--s-card);border-radius:16px;padding:12px 22px;font-size:20px}
+.s-hrow.l1 .s-hl{padding-left:24px;color:var(--s-ink)} .s-hrow.l2 .s-hl{padding-left:48px;color:var(--s-muted)}
+.s-hrow.l0{background:#2c2c2e;font-weight:600}
+.s-hl{display:flex;align-items:center;gap:10px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.s-hn{color:var(--s-muted);font-size:18px} .s-hn b{color:var(--s-ink);font-size:24px;font-variant-numeric:tabular-nums;margin-right:4px}
+.s-hn.s-red b{color:var(--s-red)}
+.s-rag{width:14px;height:14px;border-radius:50%}
+.s-rag.r{background:var(--s-red)} .s-rag.a{background:var(--s-amber)} .s-rag.g{background:var(--s-green)}
+.s-hs{justify-self:end;font-size:15px;font-weight:600;padding:4px 12px;border-radius:999px}
+.s-hs.r{background:rgba(255,69,58,.18);color:var(--s-red)} .s-hs.a{background:rgba(255,179,64,.18);color:var(--s-amber)} .s-hs.g{background:rgba(48,209,88,.16);color:var(--s-green)}
+.slide .pri{font-size:14px;padding:2px 10px}
+.slide .pri.P3{background:rgba(255,179,64,.18);color:var(--s-amber)} .slide .pri.P4{background:rgba(255,255,255,.12);color:var(--s-muted)} .slide .pri.P2{background:rgba(255,69,58,.18);color:var(--s-red)}
+.p-nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:#fff;font-size:26px;line-height:1;cursor:pointer;z-index:2}
+.p-nav:hover{background:rgba(255,255,255,.22)}
+.p-nav.prev{left:4px} .p-nav.next{right:4px}
+.p-dots{display:flex;justify-content:center;gap:8px;padding:12px 16px 16px;flex-wrap:wrap}
+.p-dot{width:8px;height:8px;border-radius:50%;border:0;background:rgba(255,255,255,.28);cursor:pointer;padding:0}
+.p-dot.on{background:#fff;width:22px;border-radius:4px}
+</style>
+<style>
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+img{max-width:100%}
+.me{margin-top:22px;padding:12px 10px 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:4px;font-size:13px}
+.me b{font-size:14px}
+.me .r{color:var(--muted)}
+.me .links{display:flex;gap:12px;margin-top:4px}
+.me .links a{padding:0;color:var(--primary);background:none!important;font-size:13px}
+.acc-scopes{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow:auto;background:var(--fill);border-radius:10px;padding:10px 12px}
+.acc-scopes label{display:flex;gap:8px;align-items:center;font-size:13.5px;color:var(--ink);font-weight:400}
+.acc-scopes .l1{padding-left:18px}.acc-scopes .l2{padding-left:36px;color:var(--muted)}
+.acc-box{background:var(--sunk);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.acc-box h3{font-size:13px;font-family:var(--f-body);color:var(--muted);font-weight:600;letter-spacing:0}
+.chip.role{background:var(--tint);color:var(--primary)}
+body.client .ic{display:none}
+.linkbox{font-family:var(--f-mono);font-size:12px;background:var(--surface);border-radius:8px;padding:8px 10px;overflow-wrap:anywhere;user-select:all}
+.settings{padding:4px 22px 20px;display:flex;flex-direction:column;gap:12px}
+.settings .out{font-size:13px;color:var(--muted);white-space:pre-wrap}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <nav class="nav" id="nav" aria-label="Companies and clients"></nav>
+  <main class="main"><div class="wrap" id="main">
+    <div class="panel"><div class="empty"><b>Loading your tracker…</b>Companies, clients and action items appear here once the shared store answers.</div></div>
+  </div></main>
+</div>
+<div id="drawerHost"></div>
+<div id="toastHost"></div>
+<div id="presentHost"></div>
+
+<script src="/shim.js"></script>
+<script>
+(() => {
+"use strict";
+/* ---------- constants ---------- */
+const PRIORITIES = [
+  {k:"P1", label:"P1 · Critical", hint:"Business or client impact now; daily follow-up"},
+  {k:"P2", label:"P2 · High", hint:"Needed this week"},
+  {k:"P3", label:"P3 · Medium", hint:"Planned work within the month"},
+  {k:"P4", label:"P4 · Low", hint:"Nice to have"}
+];
+const STATUSES = ["Not started","In progress","Awaiting input","Blocked","Done","Cancelled"];
+const CLOSED = ["Done","Cancelled"];
+const FREQS = [["none","No repeat"],["daily","Daily"],["weekly","Weekly"],["fortnightly","Fortnightly"],["monthly","Monthly"],["quarterly","Quarterly"],["halfyearly","Half-yearly"],["yearly","Yearly"]];
+const TYPE_FREQ = {"Quarterly meeting":"quarterly","Monthly meeting":"monthly","Weekly meeting":"weekly","Ongoing (recurring)":"weekly"};
+const ROLES = ["Leadership","Account manager","Team leader","Analyst","Client contact","Other"];
+const LONG_DAYS = 14;
+const CO_COLORS = {poc:"var(--poc)", exp:"var(--exp)", ukb:"var(--ukb)"};
+
+/* ---------- state ---------- */
+const S = {
+  db:null, me:null, role:"", meId:null, canWrite:false, canAdmin:false, canCreate:false, mail:false, users:[], settings:{}, pendingRender:false,
+  structure:null, structureLoaded:false, people:[], actions:[], actionsLoaded:false, updates:[],
+  view:{kind:"overview"}, filters:{q:"",status:"open",priority:"",type:"",person:"",flag:""},
+  drawer:null, comments:[], commentsUnsub:null, profiles:{},
+  wk:{scope:"all", audience:"internal", weekEnd:null, to:"", cc:"", subject:""},
+  setup:{editPerson:null}, closedRange:"last", closedItems:[], err:null
+};
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const h = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const z = n => String(n).padStart(2,"0");
+const ymd = d => d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate());
+const today = () => ymd(new Date());
+const addDays = (s,n) => { const d = new Date(s+"T00:00:00"); d.setDate(d.getDate()+n); return ymd(d); };
+const diffDays = (a,b) => Math.round((new Date(a+"T00:00:00") - new Date(b+"T00:00:00"))/864e5);
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const fmt = s => { if(!s) return "—"; const [y,m,d] = s.slice(0,10).split("-"); return `${+d} ${MON[+m-1]}${y!==String(new Date().getFullYear())?" "+y.slice(2):""}`; };
+const fmtTime = iso => { if(!iso) return ""; const d = new Date(iso); return `${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}, ${z(d.getHours())}:${z(d.getMinutes())}`; };
+const nowISO = () => new Date().toISOString();
+function addFreq(s, f){
+  const d = new Date(s+"T00:00:00");
+  const months = {monthly:1, quarterly:3, halfyearly:6, yearly:12}[f];
+  if (months) d.setMonth(d.getMonth()+months);
+  else d.setDate(d.getDate() + ({daily:1, weekly:7, fortnightly:14}[f] || 0));
+  return ymd(d);
+}
+function weekBounds(which){
+  const t = today(); const dow = (new Date(t+"T00:00:00").getDay()+6)%7; const mon = addDays(t,-dow);
+  return which==="this" ? {start:mon, end:t} : {start:addDays(mon,-7), end:addDays(mon,-1)};
+}
+const closedDay = a => a.closedAt ? ymd(new Date(a.closedAt)) : "";
+const closedBetween = (list, b) => list.filter(a=>CLOSED.includes(a.status) && a.closedAt && closedDay(a)>=b.start && closedDay(a)<=b.end).sort((x,y)=>y.closedAt.localeCompare(x.closedAt));
+function toast(msg){ const t = document.createElement("div"); t.className="toast"; t.textContent = msg; $("#toastHost").replaceChildren(t); setTimeout(()=>{ if(t.isConnected) t.remove(); }, 2600); }
+const freqLabel = f => (FREQS.find(x=>x[0]===f)||["","—"])[1];
+const stClass = s => ({"In progress":"ip","Blocked":"bl","Awaiting input":"aw","Done":"dn"}[s]||"");
+
+/* ---------- structure lookups ---------- */
+const allCompanies = () => (S.structure?.companies)||[];
+function scopeAllows(coId, clId, tmId){
+  if (S.role==="admin") return true;
+  if (S.role==="client") return !!clId && clId===S.me.clientId;
+  return (S.me.scopes||[]).some(s=> s==="*" || s===coId || (clId && (s===`${coId}:${clId}` || (tmId ? s===`${coId}:${clId}:${tmId}` : s.startsWith(`${coId}:${clId}:`)))));
+}
+function companies(){
+  if (S.role==="admin") return allCompanies();
+  const out = [];
+  for (const c of allCompanies()){
+    const clients = (c.clients||[]).filter(k => scopeAllows(c.id,k.id) || S.actions.some(a=>a.companyId===c.id && a.clientId===k.id)).map(k => ({...k, teams:(k.teams||[]).filter(t => S.role!=="client" && (scopeAllows(c.id,k.id,t.id) || S.actions.some(a=>a.clientId===k.id && a.teamId===t.id)))}));
+    if (clients.length || scopeAllows(c.id) || S.actions.some(a=>a.companyId===c.id)) out.push({...c, clients});
+  }
+  return out;
+}
+const involved = a => [a.accountable,...(a.responsible||[]),...(a.consulted||[])].includes(S.meId);
+const canEditA = a => S.role==="admin" || (S.role==="editor" && scopeAllows(a.companyId, a.clientId, a.teamId));
+const canUpdA = a => canEditA(a) || (S.role==="contributor" && involved(a));
+const types = () => (S.structure?.types)||[];
+const co = id => companies().find(c=>c.id===id);
+const cl = (coId, clId) => (co(coId)?.clients||[]).find(c=>c.id===clId);
+const tm = (coId, clId, tmId) => (cl(coId,clId)?.teams||[]).find(t=>t.id===tmId);
+function containerLabel(a){
+  const c = co(a.companyId); if(!c) return "Unassigned";
+  const k = cl(a.companyId, a.clientId); const t = tm(a.companyId, a.clientId, a.teamId);
+  return [c.name, k ? k.name : "Company-level", t && t.name].filter(Boolean).join(" · ");
+}
+function refPrefix(coId, clId, tmId){
+  const c = co(coId), k = cl(coId,clId), t = tm(coId,clId,tmId);
+  if (k && t) return `${k.code}-${t.code}`;
+  if (k) return k.code;
+  return c ? c.code : "ACT";
+}
+function nextRef(prefix){
+  let max = 0;
+  for (const a of S.actions){ if (a.ref && a.ref.startsWith(prefix+"-")) { const n = parseInt(a.ref.slice(prefix.length+1),10); if (n>max) max=n; } }
+  return `${prefix}-${String(max+1).padStart(3,"0")}`;
+}
+const person = id => S.people.find(p=>p.id===id);
+const pname = id => person(id)?.name || "—";
+const coColor = id => CO_COLORS[id] || "var(--faint)";
+
+/* ---------- derived ---------- */
+function derive(a){
+  const t = today();
+  const open = !CLOSED.includes(a.status);
+  const overdue = open && !!a.due && a.due < t;
+  const nbdSlip = open && !!a.nbd && a.nbd < t;
+  const cadence = +a.updateEvery || 0;
+  const last = (a.lastUpdateAt || a.createdAt || "").slice(0,10);
+  const since = last ? diffDays(t, last) : null;
+  const updDue = S.role!=="client" && open && cadence > 0 && since !== null && since >= cadence;
+  const recurring = !!(a.recur && a.recur.freq && a.recur.freq !== "none");
+  const remDue = S.role!=="client" && open && recurring && !!a.recur.next && a.recur.next <= addDays(t, +a.recur.lead || 0);
+  const due7 = open && !!a.due && a.due >= t && a.due <= addDays(t,7);
+  return {open, overdue, nbdSlip, updDue, remDue, recurring, due7, since};
+}
+function inScope(a, sc){
+  if (!sc || sc.kind === "all" || !sc.co) return true;
+  if (a.companyId !== sc.co) return false;
+  if (!sc.cl) return true;
+  if (sc.cl === "_co") return !a.clientId;
+  if (a.clientId !== sc.cl) return false;
+  if (!sc.tm) return true;
+  return a.teamId === sc.tm;
+}
+function stats(list){
+  const t = today(), wkAgo = addDays(t,-7);
+  const lw = weekBounds("last");
+  const s = {open:0, overdue:0, p12:0, due7:0, upd:0, rem:0, closed7:0, closedLast:0, total:list.length};
+  for (const a of list){ const d = derive(a);
+    if (d.open){ s.open++; if(d.overdue) s.overdue++; if(a.priority==="P1"||a.priority==="P2") s.p12++; if(d.due7) s.due7++; if(d.updDue) s.upd++; if(d.remDue) s.rem++; }
+    else if (a.status==="Done" && a.closedAt){ const cd = closedDay(a); if (cd >= wkAgo) s.closed7++; if (cd>=lw.start && cd<=lw.end) s.closedLast++; }
+  }
+  return s;
+}
+function rag(list){
+  const s = stats(list);
+  const p1Late = list.some(a => { const d = derive(a); return d.overdue && a.priority==="P1"; });
+  if (p1Late || (s.open && s.overdue/s.open > .2)) return "r";
+  if (s.overdue || s.upd) return "a";
+  return "g";
+}
+const PRANK = {P1:1,P2:2,P3:3,P4:4};
+function sortActions(list){
+  return list.slice().sort((a,b)=>{
+    const da = derive(a), db_ = derive(b);
+    if (da.open !== db_.open) return da.open ? -1 : 1;
+    if (!da.open) return (b.closedAt||"").localeCompare(a.closedAt||"");
+    if (da.overdue !== db_.overdue) return da.overdue ? -1 : 1;
+    const p = (PRANK[a.priority]||9) - (PRANK[b.priority]||9); if (p) return p;
+    return (a.nbd||a.due||"9999").localeCompare(b.nbd||b.due||"9999");
+  });
+}
+
+/* ---------- navigation ---------- */
+function scopeOfView(){ const v = S.view; return v.kind==="container" ? v : {kind:"all"}; }
+function go(view){ S.view = view; S.filters = {...S.filters, q:"", person:"", flag:""}; render(); window.scrollTo(0,0); }
+function viewKey(v){ return v.kind==="container" ? `c:${v.co}:${v.cl||""}:${v.tm||""}` : v.kind; }
+
+function renderNav(){
+  const vk = viewKey(S.view);
+  const badge = list => { const s = stats(list); return `<span class="n">${s.overdue?`<span class="badge red" title="Overdue">${s.overdue}</span>`:""}<span class="badge" title="Open">${s.open}</span></span>`; };
+  const internal = S.role && S.role!=="client";
+  let html = `<div class="brand"><b>AXION</b><span>${internal?"PeopleOCity · Expenova · UKB IT":"Shared action items"}</span></div>
+  <a data-act="nav" data-v="overview" class="${vk==="overview"?"on":""}">${internal?"Overall view":"Overview"} ${badge(S.actions)}</a>
+  ${internal?`<a data-act="nav" data-v="weekly" class="${vk==="weekly"?"on":""}">Weekly updates</a>
+  <a data-act="nav" data-v="setup" class="${vk==="setup"?"on":""}">People &amp; setup</a>`:""}`;
+  html += `<div class="grp"><div class="lbl">Companies</div>`;
+  for (const c of companies()){
+    const ca = S.actions.filter(a=>a.companyId===c.id);
+    html += `<a class="co ${vk===`c:${c.id}::`?"on":""}" data-act="nav" data-v="c" data-co="${h(c.id)}"><span class="dot" style="background:${coColor(c.id)}"></span>${h(c.name)} ${badge(ca)}</a>`;
+    for (const k of c.clients||[]){
+      const ka = ca.filter(a=>a.clientId===k.id);
+      html += `<a class="cl ${vk===`c:${c.id}:${k.id}:`?"on":""}" data-act="nav" data-v="c" data-co="${h(c.id)}" data-cl="${h(k.id)}">${h(k.name)} ${badge(ka)}</a>`;
+      for (const t of k.teams||[]){
+        const ta = ka.filter(a=>a.teamId===t.id);
+        html += `<a class="tm ${vk===`c:${c.id}:${k.id}:${t.id}`?"on":""}" data-act="nav" data-v="c" data-co="${h(c.id)}" data-cl="${h(k.id)}" data-tm="${h(t.id)}">${h(t.name)} team ${badge(ta)}</a>`;
+      }
+    }
+    if (ca.some(a=>!a.clientId)) html += `<a class="cl ${vk===`c:${c.id}:_co:`?"on":""}" data-act="nav" data-v="c" data-co="${h(c.id)}" data-cl="_co">Company-level ${badge(ca.filter(a=>!a.clientId))}</a>`;
+  }
+  html += `</div>`;
+  if (S.me) html += `<div class="me"><b>${h(S.me.name)}</b><span class="r">${h(ROLE_LABEL[S.role]||S.role)}</span><div class="links"><a data-act="account">Account</a><a data-act="signout">Sign out</a></div></div>`;
+  $("#nav").innerHTML = html;
+}
+function mobNav(){
+  const vk = viewKey(S.view);
+  let o = S.role!=="client" ? `<option value="overview">Overall view</option><option value="weekly">Weekly updates</option><option value="setup">People &amp; setup</option>` : `<option value="overview">Overview</option>`;
+  for (const c of companies()){
+    o += `<optgroup label="${h(c.name)}"><option value="c:${h(c.id)}::">${h(c.name)} — all</option>`;
+    for (const k of c.clients||[]){ o += `<option value="c:${h(c.id)}:${h(k.id)}:">${h(k.name)}</option>`; for (const t of k.teams||[]) o += `<option value="c:${h(c.id)}:${h(k.id)}:${h(t.id)}">&nbsp;&nbsp;${h(k.name)} · ${h(t.name)}</option>`; }
+    o += `</optgroup>`;
+  }
+  return `<div class="mobnav"><select class="inp" id="mobsel" aria-label="Go to">${o.replace(`value="${h(vk)}"`,`value="${h(vk)}" selected`)}</select><button class="btn sm" data-act="account">Account</button></div>`;
+}
+
+/* ---------- main render ---------- */
+function render(){
+  renderNav();
+  const m = $("#main");
+  if (S.err){ m.innerHTML = mobNav() + `<div class="banner">${h(S.err)}</div>`; return; }
+  if (!S.structureLoaded || !S.actionsLoaded){ return; }
+  const ro = S.role==="client" ? `<div class="banner" style="background:var(--blue-bg);color:var(--blue)">These are the action items shared with ${h(S.clientName||"your team")}. Open any item to see its progress and post a comment.</div>` : "";
+  if (S.role==="client" && (S.view.kind==="weekly" || S.view.kind==="setup")) S.view = {kind:"overview"};
+  const k = S.view.kind;
+  m.innerHTML = mobNav() + ro + (k==="overview" ? viewOverview() : k==="container" ? viewContainer() : k==="weekly" ? viewWeekly() : viewSetup());
+  if (k==="weekly") hydrateWeekly();
+}
+
+function scopeAttrs(sc){ return sc && sc.co ? `data-co="${h(sc.co)}" data-cl="${h(sc.cl||"")}" data-tm="${h(sc.tm||"")}"` : `data-co="" data-cl="" data-tm=""`; }
+function kpiStrip(s, scoped){
+  const sa = scopeAttrs(scoped ? S.view : null); const cur = scoped ? S.filters.flag : null;
+  const cell = (v,k,cls,flag) => `<button type="button" class="kpi ${v?cls:""} ${cur===flag&&scoped?"sel":""}" data-act="drill" data-flag="${flag}" ${sa} aria-label="Show ${h(k.toLowerCase())}: ${v}"><span class="v">${v}</span><span class="k">${k}</span></button>`;
+  return `<div class="kpis">${cell(s.open,"Open actions","","open")}${S.role==="client"?"":cell(s.overdue,"Past due date","red","overdue")}${cell(s.p12,"Open P1 / P2","amber","p12")}${S.role==="client"?"":cell(s.due7,"Due in 7 days","","due7")}${S.role==="client"?"":cell(s.upd,"Updates pending","amber","upd")+cell(s.rem,"Repeat reminders due","","rem")}${cell(s.closedLast,"Closed last week","green","closedLast")}</div>`;
+}
+
+function viewOverview(){
+  const s = stats(S.actions);
+  let rows = "";
+  const line = (cls, label, list, nav, color) => { const x = stats(list); const sa = nav.replace(/data-act="nav" data-v="c" /,"");
+    const n = (v, flag, late) => v ? `<button type="button" class="num ${late?"late":""}" data-act="drill" data-flag="${flag}" ${sa}>${v}</button>` : `<span class="zero">0</span>`;
+    return `<tr class="${cls}" ${nav}><td><span class="rag ${rag(list)}"></span>${color?`<span class="dot" style="display:inline-block;background:${color};margin-right:8px"></span>`:""}${label}</td><td>${n(x.open,"open")}</td><td class="ic">${n(x.overdue,"overdue",true)}</td><td>${n(x.p12,"p12")}</td><td class="ic">${n(x.due7,"due7")}</td><td class="ic">${n(x.upd,"upd")}</td><td class="ic">${n(x.rem,"rem")}</td><td>${n(x.closedLast,"closedLast")}</td></tr>`; };
+  for (const c of companies()){
+    const ca = S.actions.filter(a=>a.companyId===c.id);
+    rows += line("co", h(c.name), ca, `data-act="nav" data-v="c" data-co="${h(c.id)}"`, coColor(c.id));
+    for (const k of c.clients||[]){
+      const ka = ca.filter(a=>a.clientId===k.id);
+      rows += line("cl", h(k.name) + (k.clientSharing?` <span class="chip blue">Client updates on</span>`:""), ka, `data-act="nav" data-v="c" data-co="${h(c.id)}" data-cl="${h(k.id)}"`);
+      for (const t of k.teams||[]) rows += line("tm", h(t.name)+" team", ka.filter(a=>a.teamId===t.id), `data-act="nav" data-v="c" data-co="${h(c.id)}" data-cl="${h(k.id)}" data-tm="${h(t.id)}"`);
+    }
+    if (!(c.clients||[]).length || ca.some(a=>!a.clientId)) rows += line("cl", "Company-level", ca.filter(a=>!a.clientId), `data-act="nav" data-v="c" data-co="${h(c.id)}" data-cl="_co"`);
+  }
+  const attention = sortActions(S.actions.filter(a=>{ const d = derive(a); return d.overdue || d.updDue || d.remDue || d.nbdSlip || (d.open && a.priority==="P1"); })).slice(0,25);
+  return `<div class="head"><div><div class="crumb">${S.role==="admin"?"All three companies":h(S.me?.name||"")} · ${fmt(today())}</div><h1>${S.role==="client"?h(S.clientName||"Overview"):"Overall view"}</h1></div>
+    <div class="actions"><button class="btn" data-act="present">Present</button>${S.role!=="client"?`<button class="btn" data-act="nav" data-v="weekly">Prepare weekly update</button>`:""}${S.canCreate?`<button class="btn pri" data-act="new">New action</button>`:""}</div></div>
+  ${kpiStrip(s,false)}
+  <section class="panel"><header><h2>By company, client and team</h2><span class="sub">Health: red = a P1 is late or over 20% of open items are late · amber = anything late or an update pending</span></header>
+    <div class="tblwrap"><table class="sum"><thead><tr><th>Container</th><th>Open</th><th class="ic">Late</th><th>P1/P2</th><th class="ic">Due 7d</th><th class="ic">Updates pending</th><th class="ic">Reminders</th><th>Closed last wk</th></tr></thead><tbody>${rows}</tbody></table></div></section>
+  <section class="panel"><header><h2>Needs attention</h2><span class="sub">Late, P1, slipped next-best-date, overdue updates and repeat reminders</span></header>
+    ${attention.length ? `<div class="att">${attention.map(a=>rowHTML(a,true)).join("")}</div>` : `<div class="empty"><b>${S.actions.length?"Nothing needs attention right now":"No action items yet"}</b>${S.actions.length?"Late items, P1s, pending updates and due reminders will gather here.":"Pick a client on the left, or press New action to log the first item."}</div>`}</section>
+  ${closedPanel(S.actions, true)}`;
+}
+
+function rowHTML(a, compact){
+  const d = derive(a);
+  const flags = [];
+  if (d.overdue) flags.push(`<span class="chip red">Late ${diffDays(today(),a.due)}d</span>`);
+  else if (d.nbdSlip) flags.push(`<span class="chip amber">NBD passed</span>`);
+  if (d.updDue) flags.push(`<span class="chip amber">Update due · ${d.since}d since last</span>`);
+  if (d.remDue) flags.push(`<span class="chip blue">Reminder · ${fmt(a.recur.next)}</span>`);
+  else if (d.recurring && d.open) flags.push(`<span class="chip">Repeats ${h(freqLabel(a.recur.freq).toLowerCase())}</span>`);
+  if (d.open && a.closeRequested) flags.push(`<span class="chip green">Closure requested</span>`);
+  if (d.open && a.blockedNote && a.status==="Blocked") flags.push(`<span class="chip red">Blocked</span>`);
+  if (a.sharedWithClient) flags.push(`<span class="chip blue">Client-visible</span>`);
+  flags.push(`<span class="chip">${h(a.type||"Action")}</span>`);
+  if (S.view.kind!=="container" || !S.view.cl || (S.view.cl && !S.view.tm && a.teamId)) flags.push(`<span class="chip">${h(containerLabel(a))}</span>`);
+  const resp = (a.responsible||[]).map(pname).join(", ") || "—";
+  const nbd = `<div class="dt c-nbd ${d.nbdSlip?"late":""}">${fmt(a.nbd)}<small>Next best date</small></div>`;
+  const due = S.role==="client" && !a.due ? `<div class="dt c-due"></div>` : `<div class="dt c-due ${d.overdue?"late":""}">${fmt(a.due)}<small>Due</small></div>`;
+  const body = `<div class="c-t"><div class="t">${h(a.title)}</div>${a.nba&&d.open?`<div class="nba"><b>NBA</b> ${h(a.nba)}</div>`:""}${!d.open&&a.closureNote?`<div class="nba"><b>Closed</b> ${h(a.closureNote)}</div>`:""}<div class="meta">${flags.join("")}</div></div>`;
+  if (compact) return `<div class="row ${d.open?"":"closed"}" data-act="open" data-id="${h(a.id)}" tabindex="0"><span class="cobar" style="background:${coColor(a.companyId)}"></span><div class="ref c-ref">${h(a.ref)}</div>${body}<div class="c-pri"><span class="pri ${h(a.priority)}">${h(a.priority)}</span></div><div class="ppl c-ppl"><b>A</b> ${h(pname(a.accountable))} · <b>R</b> ${h(resp)}<br>${S.role==="client"&&!a.due?"":`<span class="${d.overdue?"late":""}">Due ${fmt(a.due)}</span> · `}NBD ${fmt(a.nbd)}</div></div>`;
+  return `<div class="row ${d.open?"":"closed"}" data-act="open" data-id="${h(a.id)}" tabindex="0"><span class="cobar" style="background:${coColor(a.companyId)}"></span><div class="ref c-ref">${h(a.ref)}</div>${body}<div class="c-pri"><span class="pri ${h(a.priority)}">${h(a.priority)}</span></div><div class="c-st"><span class="st ${stClass(a.status)}">${h(a.status)}</span></div><div class="ppl c-ppl"><b>A</b> ${h(pname(a.accountable))}<br><b>R</b> ${h(resp)}</div>${nbd}${due}</div>`;
+}
+
+function closedPanel(list, showContainer){
+  const which = S.closedRange, b = weekBounds(which);
+  const items = closedBetween(list, b); S.closedItems = items; S.closedShowC = showContainer;
+  const done = items.filter(a=>a.status==="Done").length, canc = items.length - done;
+  const row = a => `<div class="row closedrow" data-act="open" data-id="${h(a.id)}" tabindex="0"><span class="cobar" style="background:${coColor(a.companyId)}"></span><div class="ref c-ref">${h(a.ref)}</div>
+    <div class="c-t"><div class="t">${h(a.title)}</div><div class="nba"><b>${a.status==="Done"?"Outcome":"Cancelled"}</b> ${h(a.closureNote||"No closure note recorded")}</div><div class="meta">${a.status==="Done"?`<span class="chip green">Done</span>`:`<span class="chip">Cancelled</span>`}<span class="chip">${h(a.type||"Action")}</span>${showContainer?`<span class="chip">${h(containerLabel(a))}</span>`:""}${a.due && closedDay(a)>a.due?`<span class="chip amber">Closed ${diffDays(closedDay(a),a.due)}d after due</span>`:a.due?`<span class="chip green">On time</span>`:""}</div></div>
+    <div class="c-pri"><span class="pri ${h(a.priority)}">${h(a.priority)}</span></div>
+    <div class="ppl c-ppl">Closed <b>${fmt(closedDay(a))}</b><br><b>A</b> ${h(pname(a.accountable))} · <b>R</b> ${h((a.responsible||[]).map(pname).join(", ")||"—")}</div></div>`;
+  return `<section class="panel"><header><div><h2>Closed ${which==="last"?"last week":"this week"}</h2><span class="sub">${fmt(b.start)} – ${fmt(b.end)} · ${done} done${canc?` · ${canc} cancelled`:""}</span></div>
+    <div class="actions"><div class="seg" role="group" aria-label="Period"><button type="button" data-act="crange" data-r="last" class="${which==="last"?"on":""}">Last week</button><button type="button" data-act="crange" data-r="this" class="${which==="this"?"on":""}">This week</button></div>${items.length?`<button class="btn sm" data-act="copyClosed">Copy for update</button>`:""}</div></header>
+    ${items.length ? `<div class="att">${items.map(row).join("")}</div>` : `<div class="empty"><b>Nothing closed ${which==="last"?"last week":"so far this week"}</b>Items marked Done or Cancelled, with their closure note, appear here for your update.</div>`}</section>`;
+}
+async function copyClosed(){
+  const b = weekBounds(S.closedRange); const items = S.closedItems;
+  const lines = items.map(a=>`- ${a.ref} · ${a.title}${S.closedShowC?` [${containerLabel(a)}]`:""} — ${a.status==="Done"?"":"Cancelled: "}${a.closureNote||"Completed"} (closed ${fmt(closedDay(a))}, owner ${pname(a.accountable)})`);
+  const txt = `Closed ${S.closedRange==="last"?"last week":"this week"} (${fmt(b.start)} – ${fmt(b.end)}): ${items.filter(a=>a.status==="Done").length} done\n${lines.join("\n")}`;
+  try { await navigator.clipboard.writeText(txt); toast("Closed items copied"); } catch(_){ toast("Copy is blocked here — open an item to copy its note"); }
+}
+function viewContainer(){
+  const v = S.view, c = v.co ? co(v.co) : null; if (v.co && !c) return `<div class="empty">This container no longer exists.</div>`;
+  const k = c && v.cl && v.cl!=="_co" ? cl(v.co, v.cl) : null; const t = k && v.tm ? tm(v.co, v.cl, v.tm) : null;
+  const title = !c ? "All actions" : t ? `${k.name} · ${t.name} team` : k ? k.name : v.cl==="_co" ? `${c.name} — company-level` : c.name;
+  const crumb = !c ? "All three companies" : t ? `${c.name} · ${k.name}` : k ? c.name : "Company";
+  const scoped = S.actions.filter(a=>inScope(a,v));
+  const f = S.filters;
+  let list = scoped.filter(a=>{
+    const d = derive(a);
+    if (f.status==="open" && !d.open) return false;
+    if (f.status==="closed" && d.open) return false;
+    if (f.status && !["open","closed","all"].includes(f.status) && a.status!==f.status) return false;
+    if (f.priority && a.priority!==f.priority) return false;
+    if (f.type && a.type!==f.type) return false;
+    if (f.person && !([a.accountable,...(a.responsible||[]),...(a.consulted||[]),...(a.informed||[])].includes(f.person))) return false;
+    if (f.flag==="overdue" && !d.overdue) return false;
+    if (f.flag==="p12" && !(d.open && (a.priority==="P1"||a.priority==="P2"))) return false;
+    if (f.flag==="due7" && !d.due7) return false;
+    if (f.flag==="upd" && !d.updDue) return false;
+    if (f.flag==="rem" && !d.remDue) return false;
+    if (f.flag==="closedLast"){ const b = weekBounds("last"); const cd = closedDay(a); if (a.status!=="Done" || !(cd>=b.start && cd<=b.end)) return false; }
+    if (f.q){ const q = f.q.toLowerCase(); if (![a.ref,a.title,a.description,a.nba].join(" ").toLowerCase().includes(q)) return false; }
+    return true;
+  });
+  list = sortActions(list);
+  const peopleIds = [...new Set(scoped.flatMap(a=>[a.accountable,...(a.responsible||[]),...(a.consulted||[]),...(a.informed||[])]).filter(Boolean))];
+  const opt = (val, lab, cur) => `<option value="${h(val)}" ${cur===val?"selected":""}>${h(lab)}</option>`;
+  const flagNames = {overdue:"Past due date",p12:"Open P1 / P2",due7:"Due in 7 days",upd:"Updates pending",rem:"Reminders due",closedLast:"Closed last week"};
+  const teamsNote = k && k.teams && k.teams.length && !t ? `<span class="sub">Includes ${k.teams.map(x=>h(x.name)).join(" and ")} teams</span>` : "";
+  return `<div class="head"><div><div class="crumb">${c?`<span class="dot" style="display:inline-block;background:${coColor(c.id)};margin-right:6px"></span>`:`<a data-act="nav" data-v="overview" style="cursor:pointer;text-decoration:underline">Overall view</a> · `}${h(crumb)}</div><h1>${h(title)}</h1></div>
+    <div class="actions">${k && k.clientSharing ? `<span class="chip blue" style="align-self:center">Client receives weekly updates</span>`:""}<button class="btn" data-act="present">Present</button>${S.role!=="client"?`<button class="btn" data-act="weeklyHere">Weekly update for this</button>`:""}${S.canCreate?`<button class="btn pri" data-act="new">New action</button>`:""}</div></div>
+  ${kpiStrip(stats(scoped), true)}
+  <section class="panel">
+    <div class="filters">
+      <input type="search" class="inp" id="fq" placeholder="Search ref, title, next best action" value="${h(f.q)}" aria-label="Search">
+      <select class="inp" id="fstatus" aria-label="Status">${opt("open","Open items",f.status)}${opt("closed","Closed items",f.status)}${opt("all","All items",f.status)}${STATUSES.map(s=>opt(s,s,f.status)).join("")}</select>
+      <select class="inp" id="fprio" aria-label="Priority">${opt("","Any priority",f.priority)}${PRIORITIES.map(p=>opt(p.k,p.label,f.priority)).join("")}</select>
+      <select class="inp" id="ftype" aria-label="Type">${opt("","Any type",f.type)}${types().map(x=>opt(x,x,f.type)).join("")}</select>
+      <select class="inp" id="fperson" aria-label="Person">${opt("","Anyone",f.person)}${peopleIds.map(id=>opt(id,pname(id),f.person)).join("")}</select>
+      ${f.flag?`<button class="btn sm" data-act="flag" data-flag="">${h(flagNames[f.flag])} ✕</button>`:""}
+      ${teamsNote}
+    </div>
+    ${list.length ? `<div class="rows"><div class="rowh"><span>Ref</span><span>Action · next best action</span><span>Priority</span><span>Status</span><span>Accountable / Responsible</span><span>NBD</span><span>Due</span></div>${list.map(a=>rowHTML(a,false)).join("")}</div>`
+      : `<div class="empty"><b>${scoped.length?"No items match these filters":"No action items here yet"}</b>${scoped.length?"Change the status or priority filter to see more.":`Log the first action for ${h(title)}${S.canCreate?" with New action":""}.`}</div>`}
+  </section>
+  ${closedPanel(scoped, !k || !!(k.teams||[]).length && !t)}`;
+}
+
+/* ---------- drawer (action detail / edit) ---------- */
+let D = null; // draft
+function blankDraft(){
+  const v = S.view.kind==="container" ? S.view : {};
+  const t = today();
+  return {isNew:true, companyId:v.co||companies()[0]?.id||"", clientId: v.cl && v.cl!=="_co" ? v.cl : "", teamId:v.tm||"",
+    title:"", description:"", type:types()[0]||"Deliverable", priority:"P3", status:"Not started", due:addDays(t,7), nba:"", nbd:addDays(t,3),
+    accountable:S.people.find(p=>p.isOwnerPerson)?.id||"", responsible:[], consulted:[], informed:[],
+    sharedWithClient:false, recur:{freq:"none", next:"", lead:1}, updateEvery:0};
+}
+function openDrawer(id){
+  closeComments();
+  if (id){ const a = S.actions.find(x=>x.id===id); if(!a) return; D = JSON.parse(JSON.stringify(a)); D.isNew=false; D.recur = D.recur || {freq:"none",next:"",lead:1}; D._orig = JSON.parse(JSON.stringify(a)); subscribeComments(id); }
+  else D = blankDraft();
+  renderDrawer();
+}
+function closeDrawer(){ closeComments(); D = null; $("#drawerHost").innerHTML = ""; }
+function closeComments(){ if (S.commentsUnsub){ S.commentsUnsub(); S.commentsUnsub=null; } S.comments=[]; }
+function subscribeComments(id){
+  if (!S.db) return;
+  S.commentsUnsub = S.db.doc("actions/"+id).collection("comments").orderBy("at","desc").limit(300).onSnapshot(snap=>{
+    S.comments = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    renderTrail();
+  }, e => { const el = $("#trail"); if (el) el.innerHTML = `<div class="hint">Comment trail could not load (${h(e.code)}).</div>`; });
+}
+const isLong = d => d.due && diffDays(d.due, (d.createdAt||nowISO()).slice(0,10)) > LONG_DAYS;
+const clientSharingOn = d => !!cl(d.companyId, d.clientId)?.clientSharing;
+
+function pickerHTML(role, ids){
+  const multi = role !== "accountable";
+  const sel = multi ? (ids||[]) : (ids ? [ids] : []);
+  const chips = sel.map(id=>{ const p = person(id); return `<span class="pchip ${p?.side==="client"?"client":""}">${h(p?.name||"Unknown")}${D._full?`<button type="button" data-act="unpick" data-role="${role}" data-id="${h(id)}" aria-label="Remove ${h(p?.name||"")}">×</button>`:""}</span>`; }).join("");
+  const pool = S.people.filter(p=>p.active!==false && !sel.includes(p.id));
+  const rank = p => (p.clientId && p.clientId===D.clientId) ? 0 : (p.companyId===D.companyId || !p.companyId) ? 1 : 2;
+  pool.sort((a,b)=>rank(a)-rank(b) || a.name.localeCompare(b.name));
+  const opts = pool.map(p=>`<option value="${h(p.id)}">${h(p.name)}${p.role?` — ${h(p.role)}`:""}${p.side==="client"?" (client)":""}</option>`).join("");
+  const showSel = D._full && (multi || !sel.length);
+  return `<div class="picker" id="pk-${role}">${chips}${showSel?`<select data-pick="${role}" aria-label="Add person"><option value="">${sel.length?"+ add":"Choose person…"}</option>${opts}${S.canCreate?`<option value="__new">+ Add someone to the directory…</option>`:""}</select>`:""}</div>`;
+}
+function containerSelects(){
+  const c = co(D.companyId);
+  const coOpts = companies().map(x=>`<option value="${h(x.id)}" ${x.id===D.companyId?"selected":""}>${h(x.name)}</option>`).join("");
+  const clOpts = `<option value="">Company-level</option>` + (c?.clients||[]).map(x=>`<option value="${h(x.id)}" ${x.id===D.clientId?"selected":""}>${h(x.name)}</option>`).join("");
+  const k = cl(D.companyId, D.clientId);
+  const tmOpts = `<option value="">Whole client</option>` + (k?.teams||[]).map(x=>`<option value="${h(x.id)}" ${x.id===D.teamId?"selected":""}>${h(x.name)}</option>`).join("");
+  const dz = D._full ? "" : "disabled";
+  return `<label class="fld"><span>Company</span><select class="inp" id="f-co" ${dz}>${coOpts}</select></label>
+    <label class="fld"><span>Client</span><select class="inp" id="f-cl" ${dz}>${clOpts}</select></label>
+    <label class="fld" ${k?.teams?.length?"":"hidden"}><span>Team</span><select class="inp" id="f-tm" ${dz}>${tmOpts}</select></label>`;
+}
+function renderDrawer(){
+  if (!D) return;
+  D._full = D.isNew ? S.canCreate : canEditA(D._orig||D);
+  D._lite = D.isNew ? S.canCreate : canUpdA(D._orig||D);
+  const dis = D._full ? "" : "disabled";
+  const disL = D._lite ? "" : "disabled";
+  const d = D.isNew ? {open:true} : derive(D);
+  const long = isLong(D);
+  const opt = (v,l,cur) => `<option value="${h(v)}" ${String(cur)===String(v)?"selected":""}>${h(l)}</option>`;
+  const cadOpts = long ? [[3,"Every 3 days"],[7,"Every 7 days"],[14,"Every 14 days"]] : [[0,"Not required"],[3,"Every 3 days"],[7,"Every 7 days"],[14,"Every 14 days"]];
+  if (long && !(+D.updateEvery) && D._full) D.updateEvery = 7;
+  const share = clientSharingOn(D) && S.role!=="client";
+  const hdr = D.isNew ? `<div><div class="crumb">New action</div><h2>Log an action item</h2></div>`
+    : `<div><div class="crumb"><span class="mono">${h(D.ref)}</span> · ${h(containerLabel(D))}</div><h2>${h(D.title)}</h2></div>`;
+  const alerts = [];
+  if (!D.isNew){
+    if (d.overdue) alerts.push(`<div class="callout red">Past its due date by ${diffDays(today(),D.due)} days. Update the next best action and date, or revise the due date with a reason in the trail.</div>`);
+    if (D.closeRequested && d.open) alerts.push(`<div class="callout" style="background:var(--green-bg);color:var(--green);box-shadow:none">${h(pname(D.closeRequested.by))} asked to close this on ${fmt(D.closeRequested.at)}: “${h(D.closeRequested.note||"")}”. ${D._orig.accountable===S.meId||D._full?"Set the status to Done to close it, or post a comment if more is needed.":"The Accountable person will confirm."}</div>`);
+    if (D.lastRequestAt && d.open && S.role!=="client") alerts.push(`<div class="callout">Update reminder emailed on ${fmt(D.lastRequestAt)}${D.lastRequestTo&&D.lastRequestTo.length?` to ${h(D.lastRequestTo.map(pname).join(", "))}`:""}.</div>`);
+    if (d.updDue) alerts.push(`<div class="callout amber">A progress update is due — the last one was ${d.since} days ago and this item asks for one every ${D.updateEvery} days. ${h(((D.responsible||[]).map(pname).join(", "))||"The responsible person")} should post it below.</div>`);
+    if (d.remDue) alerts.push(`<div class="callout amber">Repeat reminder: this ${h(freqLabel(D.recur.freq).toLowerCase())} item is due on ${fmt(D.recur.next)}. Mark the cycle done once it has happened.</div>`);
+  }
+  $("#drawerHost").innerHTML = `<div class="scrim" data-act="close"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="Action item">
+    <div class="dhead">${hdr}<button class="btn sm x" data-act="close" aria-label="Close">Close</button></div>
+    <div class="dbody">
+      ${alerts.join("")}
+      <div class="sect"><h3>What and where</h3>
+        <label class="fld"><span>Action item</span><input class="inp" id="f-title" value="${h(D.title)}" placeholder="e.g. Share revised SLA dashboard with client" ${dis}></label>
+        <label class="fld" ${S.role==="client"?"hidden":""}><span>Context <em>(optional)</em></span><textarea class="inp" id="f-desc" rows="2" ${dis}>${h(D.description)}</textarea></label>
+        <div class="grid2" id="cont">${containerSelects()}</div>
+        <div class="grid2">
+          <label class="fld"><span>Type</span><select class="inp" id="f-type" ${dis}>${types().map(x=>opt(x,x,D.type)).join("")}</select></label>
+          <label class="fld"><span>Priority</span><select class="inp" id="f-prio" ${dis}>${PRIORITIES.map(p=>opt(p.k,p.label,D.priority)).join("")}</select></label>
+          <label class="fld"><span>Status</span><select class="inp" id="f-status" ${disL}>${STATUSES.map(s=>opt(s,s,D.status)).join("")}</select></label>
+        </div>
+        <label class="fld" id="closureWrap" ${CLOSED.includes(D.status)&&!(D._orig&&CLOSED.includes(D._orig.status))?"":"hidden"}><span>Closure note <em>(required to close)</em></span><textarea class="inp" id="f-closure" rows="2" placeholder="What was delivered, or why it was cancelled">${h(D.closureNote||"")}</textarea></label>
+      </div>
+      <div class="sect"><h3>Next best action · dates</h3>
+        <label class="fld"><span>NBA — next best action</span><input class="inp" id="f-nba" value="${h(D.nba)}" placeholder="The single next step that moves this forward" ${disL}></label>
+        <div class="grid2">
+          <label class="fld"><span>NBD — next best date</span><input type="date" class="inp" id="f-nbd" value="${h(D.nbd)}" ${disL}></label>
+          ${S.role==="client"&&noDue(D)?"":`<label class="fld"><span>Final due date</span><input type="date" class="inp" id="f-due" value="${h(D.due)}" ${dis}></label>`}
+          ${S.role==="client"?"":`<label class="fld"><span>Progress updates</span><select class="inp" id="f-cad" ${dis}>${cadOpts.map(([v,l])=>opt(v,l,D.updateEvery||0)).join("")}</select></label>`}
+        </div>
+        <div class="hint" id="longHint" ${S.role==="client"?"hidden":""}>${long?`Long-deadline item (over ${LONG_DAYS} days): the responsible person must post a progress update at least ${D.updateEvery===3?"every 3 days":D.updateEvery===14?"every 14 days":"weekly"} until it is closed.`:`Due within ${LONG_DAYS} days, so periodic updates are optional.`}</div>
+      </div>
+      <div class="sect"><h3>ARCI</h3>
+        <div class="arci">
+          <div class="fld"><span><span class="letter">A</span>Accountable — owns the outcome (one person)</span>${pickerHTML("accountable", D.accountable)}</div>
+          <div class="fld"><span><span class="letter">R</span>Responsible — does the work, posts updates</span>${pickerHTML("responsible", D.responsible)}</div>
+          <div class="fld"><span><span class="letter">C</span>Consulted — input before decisions</span>${pickerHTML("consulted", D.consulted)}</div>
+          <div class="fld"><span><span class="letter">I</span>Informed — receives the weekly update</span>${pickerHTML("informed", D.informed)}</div>
+        </div>
+      </div>
+      <div class="sect"><h3>Repeat reminders</h3>
+        <div class="grid2">
+          <label class="fld"><span>Repeats</span><select class="inp" id="f-freq" ${dis}>${FREQS.map(([v,l])=>opt(v,l,D.recur.freq)).join("")}</select></label>
+          <label class="fld" ${D.recur.freq==="none"?"hidden":""} id="nextWrap"><span>Next occurrence</span><input type="date" class="inp" id="f-next" value="${h(D.recur.next)}" ${dis}></label>
+          <label class="fld" ${D.recur.freq==="none"?"hidden":""} id="leadWrap"><span>Remind</span><select class="inp" id="f-lead" ${dis}>${[[0,"On the day"],[1,"1 day before"],[2,"2 days before"],[3,"3 days before"],[7,"7 days before"]].map(([v,l])=>opt(v,l,D.recur.lead??1)).join("")}</select></label>
+        </div>
+        <div class="hint">Ongoing items stay open; each completed cycle is logged in the trail and the next date rolls forward.</div>
+      </div>
+      ${share ? `<div class="sect"><h3>Client sharing</h3><label class="chk"><input type="checkbox" id="f-share" ${D.sharedWithClient?"checked":""} ${dis}> Include this item in client-facing weekly updates for ${h(cl(D.companyId,D.clientId).name)}</label><div class="hint">Only updates you mark “visible to client” are quoted in the client email.</div></div>` : ""}
+      ${D.isNew ? "" : `<div class="sect"><h3>${S.role==="client"?"Updates and comments":"Update trail"}</h3>${composeHTML()}<div class="trail" id="trail"><div class="hint">Loading trail…</div></div></div>`}
+    </div>
+    <div class="dfoot">${D._lite?`<button class="btn pri" data-act="save">${D.isNew?"Create action":"Save changes"}</button>`:""}
+      ${!D.isNew && D._lite && d.recurring && d.open ? `<button class="btn" data-act="cycle">Mark cycle done → next ${fmt(addFreq(D.recur.next||today(),D.recur.freq))}</button>`:""}
+      <button class="btn" data-act="close">${D._lite?"Cancel":"Close"}</button>
+      ${!D.isNew && S.canAdmin ? `<button class="btn danger" data-act="del" style="margin-left:auto">Delete</button>`:""}</div>
+  </aside>`;
+  if (!D.isNew) renderTrail();
+  if (D.isNew) setTimeout(()=>$("#f-title")?.focus(), 30);
+}
+function composeHTML(){
+  if (S.role==="client") return `<div class="compose"><textarea class="inp" id="c-text" rows="3" placeholder="Write a comment or question for the team"></textarea><div class="rowx"><span class="hint">Your comment is visible to the Expenova team on this item.</span><button class="btn pri sm" data-act="post" style="margin-left:auto">Post comment</button></div></div>`;
+  if (!D._lite) CKIND = "note";
+  const share = clientSharingOn(D) && D.sharedWithClient;
+  const onBehalf = S.people.filter(p=>p.active!==false).map(p=>`<option value="${h(p.id)}">On behalf of ${h(p.name)}</option>`).join("");
+  return `<div class="compose">
+    <textarea class="inp" id="c-text" rows="3" placeholder="Progress since last update, what is next, any blockers"></textarea>
+    <div class="rowx">
+      ${D._lite?`<div class="seg" role="group" aria-label="Entry type"><button type="button" class="${CKIND==="update"?"on":""}" data-act="ckind" data-k="update">Progress update</button><button type="button" class="${CKIND==="note"?"on":""}" data-act="ckind" data-k="note">Comment</button></div>`:""}
+      ${D._full?`<select class="inp" id="c-by" aria-label="Posted for"><option value="">Posted by me</option>${onBehalf}</select>`:""}
+      ${share?`<label class="chk"><input type="checkbox" id="c-client"> Visible to client</label>`:""}
+      <button class="btn pri sm" data-act="post" style="margin-left:auto">Post</button>
+    </div></div>`;
+}
+let CKIND = "update";
+async function renderTrail(){
+  const el = $("#trail"); if (!el) return;
+  if (!S.comments.length){ el.innerHTML = `<div class="hint" style="padding-left:16px">No entries yet. Progress updates posted here reset the update clock.</div>`; return; }
+  const el2 = el;
+  el2.innerHTML = S.comments.map(c=>{
+    const author = person(c.authorId)?.name || "Someone";
+    const who = c.via==="email" ? `<b>${h(pname(c.onBehalfOf)||"Email reply")}</b> <span>· by email${c.fromEmail?` (${h(c.fromEmail)})`:""}</span>` : c.onBehalfOf ? `<b>${h(pname(c.onBehalfOf))}</b> <span>(logged by ${h(author)})</span>` : c.authorId ? `<b>${h(author)}</b>` : `<b>Tracker</b>`;
+    const kind = c.kind==="update" ? "Progress update" : c.kind==="system" ? "Change" : "Comment";
+    return `<div class="ev ${h(c.kind)}"><div class="who">${who} · ${kind} · ${h(fmtTime(c.at))}${c.visibleToClient?` · <span class="chip blue">client-visible</span>`:""}</div><div class="txt">${h(c.text)}</div></div>`;
+  }).join("");
+}
+
+function readForm(){
+  if (!D || !D._lite) return;
+  const val = id => { const e = $("#"+id); return e ? e.value : undefined; };
+  D.title = (val("f-title")||"").trim(); D.description = (val("f-desc")||"").trim();
+  D.type = val("f-type"); D.priority = val("f-prio"); D.status = val("f-status");
+  D.nba = (val("f-nba")||"").trim(); D.nbd = val("f-nbd")||""; D.due = val("f-due")||"";
+  D.updateEvery = +(val("f-cad")||0);
+  D.recur = {freq: val("f-freq")||"none", next: val("f-next")||"", lead: +(val("f-lead")||0)};
+  const sh = $("#f-share"); D.sharedWithClient = sh ? sh.checked : false;
+  const cz = $("#f-closure"); if (cz) D.closureNote = cz.value.trim();
+}
+const FIELDS = ["title","description","companyId","clientId","teamId","type","priority","status","due","nba","nbd","accountable","responsible","consulted","informed","sharedWithClient","recur","updateEvery"];
+async function saveDraft(){
+  readForm();
+  const errs = [];
+  if (!D.title) errs.push("an action item title");
+  if (!D.accountable) errs.push("an Accountable person");
+  if (D.isNew && !(D.responsible||[]).length) errs.push("at least one Responsible person");
+  if (!CLOSED.includes(D.status) && !D.nba) errs.push("the next best action");
+  if (!CLOSED.includes(D.status) && !D.nbd) errs.push("the next best date");
+  if (D.recur.freq!=="none" && !D.recur.next) errs.push("the next occurrence date");
+  const closing = CLOSED.includes(D.status) && !(D._orig && CLOSED.includes(D._orig.status));
+  if (closing && !D.closureNote) errs.push("a closure note");
+  if (errs.length){ toast("Add " + errs.join(", ") + "."); return; }
+  if (D._full && isLong(D) && !(+D.updateEvery)) D.updateEvery = 7;
+  if (D._full && !clientSharingOn(D)) D.sharedWithClient = false;
+  if (!D._full && D._orig) for (const k of ["title","description","companyId","clientId","teamId","type","priority","due","accountable","responsible","consulted","informed","sharedWithClient","updateEvery","recur"]) D[k] = D._orig[k];
+  if (closing && !D._full && D._orig && D._orig.accountable!==S.meId){
+    try {
+      await S.db.doc("actions/"+D.id).update({closeRequested:{by:S.meId, at:nowISO(), note:D.closureNote}, nba:D.nba, nbd:D.nbd, lastUpdateAt:nowISO(), lastUpdateText:`Asked to close: ${D.closureNote}`});
+      await addComment(D.id, {kind:"update", text:`Asked ${pname(D._orig.accountable)} to close this: ${D.closureNote}`});
+      toast("Closure request sent to the Accountable person"); closeDrawer();
+    } catch(e){ toast(writeErr(e)); }
+    return;
+  }
+  const data = {}; for (const k of FIELDS) data[k] = D[k] ?? null;
+  if (!D.isNew && D._orig) for (const k of FIELDS) if (D._orig[k] === undefined && data[k] === null) delete data[k];
+  const btn = document.querySelector('[data-act="save"]'); if (btn) btn.disabled = true;
+  try {
+    if (D.isNew){
+      data.ref = nextRef(refPrefix(D.companyId, D.clientId, D.teamId));
+      data.createdAt = nowISO(); data.createdBy = S.meId; data.lastUpdateAt = null; data.closedAt = null; data.closureNote = "";
+      const ref = S.db.collection("actions").doc();
+      await ref.set(data);
+      await addComment(ref.id, {kind:"system", text:`Created as ${data.priority} · ${data.type}. Accountable: ${pname(data.accountable)}. Responsible: ${data.responsible.map(pname).join(", ")}.${data.due?` Due ${fmt(data.due)}.`:""}`});
+      toast(`${data.ref} created`);
+      if (S.actions.some(x=>x.id===ref.id)) openDrawer(ref.id); else closeDrawer();
+      return;
+    }
+    const o = D._orig, changes = [];
+    if (o.status!==data.status) changes.push(`Status ${o.status} → ${data.status}`);
+    if (o.priority!==data.priority) changes.push(`Priority ${o.priority} → ${data.priority}`);
+    if (o.due!==data.due) changes.push(`Due date ${fmt(o.due)} → ${fmt(data.due)}`);
+    if (o.nbd!==data.nbd) changes.push(`Next best date ${fmt(o.nbd)} → ${fmt(data.nbd)}`);
+    if (o.nba!==data.nba) changes.push(`Next best action: ${data.nba}`);
+    if (o.accountable!==data.accountable) changes.push(`Accountable ${pname(o.accountable)} → ${pname(data.accountable)}`);
+    if (JSON.stringify(o.responsible)!==JSON.stringify(data.responsible)) changes.push(`Responsible: ${data.responsible.map(pname).join(", ")}`);
+    const rk = r => r ? [r.freq||"none", r.next||"", +(r.lead??1)].join("|") : "none||1";
+    if (rk(o.recur)!==rk(data.recur)) changes.push(data.recur.freq==="none"?"Repeat reminders turned off":`Repeats ${freqLabel(data.recur.freq).toLowerCase()}, next ${fmt(data.recur.next)}`);
+    if (!!o.sharedWithClient!==!!data.sharedWithClient) changes.push(data.sharedWithClient?"Now included in client updates":"Removed from client updates");
+    if (closing){ data.closeRequested = null; data.closedAt = nowISO(); data.closureNote = D.closureNote; data.lastUpdateAt = nowISO(); data.lastUpdateText = `Closed: ${D.closureNote}`; if (D.sharedWithClient) data.lastClientUpdate = `Closed: ${D.closureNote}`; }
+    if (!CLOSED.includes(data.status) && CLOSED.includes(o.status)){ data.closedAt = null; changes.push("Reopened"); }
+    await S.db.doc("actions/"+D.id).update(data);
+    if (closing) await addComment(D.id, {kind:"update", text:`${data.status==="Done"?"Closed":"Cancelled"}: ${D.closureNote}`, visibleToClient: !!D.sharedWithClient});
+    if (changes.length) await addComment(D.id, {kind:"system", text: changes.join("\n")});
+    toast(changes.length || closing ? "Saved and logged in the trail" : "Saved");
+    closeDrawer();
+  } catch(e){ toast(writeErr(e)); if (btn) btn.disabled = false; }
+}
+function writeErr(e){
+  if (e && e.code === "invalid_argument") return e.message || "You don't have permission to change this.";
+  if (e && e.code === "quota_exceeded") return "The tracker's storage is full. Delete old cancelled items to make room.";
+  return "Could not save — " + (e && e.message || "try again");
+}
+async function addComment(actionId, c){
+  return S.db.doc("actions/"+actionId).collection("comments").add({kind:c.kind, text:c.text, at:nowISO(), authorId:S.meId||null, onBehalfOf:c.onBehalfOf||null, visibleToClient:!!c.visibleToClient});
+}
+async function postComment(){
+  const text = ($("#c-text").value||"").trim(); if (!text){ toast("Write the update first."); return; }
+  const by = $("#c-by")?.value || null; const vis = !!$("#c-client")?.checked;
+  const btn = document.querySelector('[data-act="post"]'); btn.disabled = true;
+  try {
+    await addComment(D.id, {kind:CKIND, text, onBehalfOf:by, visibleToClient:vis});
+    if (CKIND === "update" && D._lite){
+      const patch = {lastUpdateAt: nowISO(), lastUpdateText: text, lastUpdateBy: by || null};
+      if (vis) patch.lastClientUpdate = text;
+      await S.db.doc("actions/"+D.id).update(patch);
+      D.lastUpdateAt = patch.lastUpdateAt; D._orig.lastUpdateAt = patch.lastUpdateAt;
+    }
+    $("#c-text").value = ""; toast(CKIND==="update" && D._lite ? "Progress update posted" : "Comment posted");
+  } catch(e){ toast(writeErr(e)); }
+  btn.disabled = false;
+}
+async function cycleDone(){
+  const r = D._orig.recur; const done = r.next || today(); const next = addFreq(done, r.freq);
+  try {
+    await S.db.doc("actions/"+D.id).update({recur:{...r, next}, lastUpdateAt: nowISO(), lastUpdateText:`${D.type} for ${fmt(done)} completed`});
+    await addComment(D.id, {kind:"update", text:`Cycle for ${fmt(done)} completed. Next occurrence ${fmt(next)}.`});
+    toast(`Next occurrence set to ${fmt(next)}`); closeDrawer();
+  } catch(e){ toast(writeErr(e)); }
+}
+let delArm = 0;
+async function delAction(btn){
+  if (Date.now() - delArm > 4000){ delArm = Date.now(); btn.classList.add("arm"); btn.textContent = "Press again to delete"; return; }
+  try { await S.db.doc("actions/"+D.id).delete(); toast(`${D.ref} deleted`); closeDrawer(); } catch(e){ toast(writeErr(e)); }
+}
+
+/* ---------- weekly update ---------- */
+function scopeOptions(){
+  const out = [["all","All companies"]];
+  for (const c of companies()){ out.push([`c:${c.id}::`, c.name]); for (const k of c.clients||[]){ out.push([`c:${c.id}:${k.id}:`, `${c.name} · ${k.name}`]); for (const t of k.teams||[]) out.push([`c:${c.id}:${k.id}:${t.id}`, `${c.name} · ${k.name} · ${t.name}`]); } }
+  return out;
+}
+function parseScope(key){ if (key==="all") return {kind:"all"}; const [,c,k,t] = key.split(":"); return {kind:"container", co:c, cl:k||"", tm:t||""}; }
+function scopeLabel(key){ return (scopeOptions().find(o=>o[0]===key)||["","All companies"])[1]; }
+function scopeAllowsClient(key){ const sc = parseScope(key); return sc.kind==="container" && sc.cl && cl(sc.co, sc.cl)?.clientSharing; }
+/* Expenova summaries (weekly email, present mode) leave out due dates */
+const NO_DUE_COMPANIES = ["exp"];
+const noDue = a => NO_DUE_COMPANIES.includes(a.companyId);
+function buildReport(){
+  const w = S.wk; const sc = parseScope(w.scope); const end = w.weekEnd || today(); const start = addDays(end,-6);
+  const client = w.audience==="client";
+  let acts = S.actions.filter(a=>inScope(a,sc));
+  if (client) acts = acts.filter(a=>a.sharedWithClient);
+  const t = today();
+  const closed = acts.filter(a=>a.status==="Done" && a.closedAt && closedDay(a)>=start && closedDay(a)<=end).sort((x,y)=>y.closedAt.localeCompare(x.closedAt));
+  const openA = sortActions(acts.filter(a=>derive(a).open));
+  const overdue = openA.filter(a=>derive(a).overdue);
+  const focus = openA.filter(a=>!derive(a).overdue && (a.priority==="P1"||a.priority==="P2"));
+  const coming = openA.filter(a=>!derive(a).overdue && !(a.priority==="P1"||a.priority==="P2") && ((a.nbd && a.nbd<=addDays(end,7)) || (a.due && a.due<=addDays(end,7))));
+  const created = acts.filter(a=>a.createdAt && a.createdAt.slice(0,10)>=start && a.createdAt.slice(0,10)<=end);
+  const pending = client ? [] : openA.filter(a=>derive(a).updDue);
+  const recurring = openA.filter(a=>{ const d = derive(a); return d.recurring && a.recur.next && a.recur.next<=addDays(end,7); });
+  const multi = sc.kind==="all" || !sc.cl || (!sc.tm && (cl(sc.co,sc.cl)?.teams||[]).length);
+  const s = stats(acts);
+  const label = scopeLabel(w.scope);
+  const upd = a => client ? a.lastClientUpdate : a.lastUpdateText;
+  const li = a => { const r = (a.responsible||[]).map(pname).join(", "); const u = upd(a);
+    return `<li><b>${h(a.ref)} · ${h(a.title)}</b>${multi?` [${h(containerLabel(a))}]`:""}<br>${h(a.priority)} · ${h(a.status)} · Owner ${h(pname(a.accountable))}${r?` · Doing: ${h(r)}`:""}<br>Next step: ${h(a.nba||"—")} by ${fmt(a.nbd)}${noDue(a)?"":` · Due ${fmt(a.due)}`}${u?`<br>Latest: ${h(u)}`:""}</li>`; };
+  const liT = a => { const r = (a.responsible||[]).map(pname).join(", "); const u = upd(a);
+    return `- ${a.ref} · ${a.title}${multi?` [${containerLabel(a)}]`:""}\n  ${a.priority} · ${a.status} · Owner ${pname(a.accountable)}${r?` · Doing: ${r}`:""}\n  Next step: ${a.nba||"—"} by ${fmt(a.nbd)}${noDue(a)?"":` · Due ${fmt(a.due)}`}${u?`\n  Latest: ${u}`:""}`; };
+  const sec = (title, list, fn=li) => list.length ? `<h3>${h(title)} (${list.length})</h3><ul>${list.map(fn).join("")}</ul>` : "";
+  const secT = (title, list) => list.length ? `\n${title.toUpperCase()} (${list.length})\n${list.map(liT).join("\n")}\n` : "";
+  const greet = client ? `<p>Dear team,</p><p>Here is this week's status on the open action items between Expenova and ${h(cl(sc.co,sc.cl)?.name||"you")} for the week ${fmt(start)} – ${fmt(end)}.</p>` : `<p>Hi all,</p><p>Weekly action tracker update for <b>${h(label)}</b>, week ${fmt(start)} – ${fmt(end)}.</p>`;
+  const table = `<table><tr><th>Open</th><th>Late</th><th>P1/P2</th><th>Closed in period</th><th>New in period</th></tr><tr><td>${s.open}</td><td>${s.overdue}</td><td>${s.p12}</td><td>${closed.length}</td><td>${created.length}</td></tr></table>`;
+  const pendLi = a => `<li><b>${h(a.ref)} · ${h(a.title)}</b> — update from ${h((a.responsible||[]).map(pname).join(", ")||"owner")} is ${derive(a).since} days old (asked every ${a.updateEvery} days)</li>`;
+  const recLi = a => `<li><b>${h(a.ref)} · ${h(a.title)}</b> — ${h(freqLabel(a.recur.freq).toLowerCase())}, next on ${fmt(a.recur.next)}</li>`;
+  let body = `<div><h2>${client?"Weekly status update":"Weekly action update"} — ${h(label)}</h2>${greet}${table}`
+    + sec("Closed in this period", closed, a=>`<li><b>${h(a.ref)} · ${h(a.title)}</b>${multi?` [${h(containerLabel(a))}]`:""} — ${h(a.closureNote||"Completed")}<br>Closed ${fmt(closedDay(a))} · Owner ${h(pname(a.accountable))}${a.due&&!noDue(a)?(closedDay(a)>a.due?` · ${diffDays(closedDay(a),a.due)} days after due date`:" · on time"):""}</li>`)
+    + sec("Past due date", overdue) + sec("Priority focus (P1/P2)", focus) + sec("Coming up in the next 7 days", coming)
+    + sec("Recurring items coming up", recurring, recLi)
+    + (pending.length ? `<h3>Updates still pending (${pending.length})</h3><ul>${pending.map(pendLi).join("")}</ul><p>Owners, please post your progress update in the tracker before the next review.</p>` : "")
+    + (openA.length||closed.length ? "" : `<p>No open or closed items in this period.</p>`)
+    + `<p>${client?"Please reply with any changes in priority or dates.":"Reply on this thread or post in the tracker for any correction."}</p><p>Regards,<br>Amit</p></div>`;
+  let text = `${client?"Weekly status update":"Weekly action update"} — ${label}\nWeek ${fmt(start)} – ${fmt(end)}\n\nOpen ${s.open} · Late ${s.overdue} · P1/P2 ${s.p12} · Closed this week ${closed.length} · New ${created.length}\n`
+    + (closed.length?`\nCLOSED IN THIS PERIOD (${closed.length})\n${closed.map(a=>`- ${a.ref} · ${a.title}${multi?` [${containerLabel(a)}]`:""} — ${a.closureNote||"Completed"} (closed ${fmt(closedDay(a))})`).join("\n")}\n`:"")
+    + secT("Past due date", overdue) + secT("Priority focus (P1/P2)", focus) + secT("Coming up in the next 7 days", coming)
+    + (recurring.length?`\nRECURRING ITEMS COMING UP\n${recurring.map(a=>`- ${a.ref} · ${a.title} — next ${fmt(a.recur.next)}`).join("\n")}\n`:"")
+    + (pending.length?`\nUPDATES STILL PENDING\n${pending.map(a=>`- ${a.ref} · ${a.title} — ${(a.responsible||[]).map(pname).join(", ")}`).join("\n")}\n`:"")
+    + `\nRegards,\nAmit`;
+  // recipients
+  const involved = [...openA, ...closed];
+  const ids = new Set();
+  for (const a of involved){ [a.accountable, ...(a.responsible||[]), ...(a.informed||[])].forEach(id=>id&&ids.add(id)); }
+  let ppl = [...ids].map(person).filter(p=>p && p.email && p.active!==false);
+  if (client) {
+    const k = sc.cl; ppl = S.people.filter(p=>p.side==="client" && p.clientId===k && p.email && p.active!==false && (p.getsUpdates!==false));
+  } else ppl = ppl.filter(p=>p.side!=="client");
+  const to = [...new Set(ppl.map(p=>p.email))];
+  const subject = `${client?"Weekly status":"Weekly action update"} — ${label} — w/e ${fmt(end)}`;
+  return {body, text, to, subject, counts:{open:s.open, late:s.overdue, closed:closed.length, items: involved.length}};
+}
+function viewWeekly(){
+  const w = S.wk; if (!w.weekEnd) w.weekEnd = today();
+  if (w.audience==="client" && !scopeAllowsClient(w.scope)) w.audience = "internal";
+  const canClient = scopeAllowsClient(w.scope);
+  const sopts = scopeOptions().map(([v,l])=>`<option value="${h(v)}" ${v===w.scope?"selected":""}>${h(l)}</option>`).join("");
+  const hist = S.updates.slice(0,12).map(u=>`<div><span class="mono">${fmt(u.at)}</span><span><b>${h(u.scopeLabel)}</b> · ${u.audience==="client"?"client":"internal"}</span><span class="sub">${(u.to||[]).length} recipients · ${u.items||0} items · ${u.channel==="email"?"sent":u.channel==="outlook"?"Outlook draft":"copied"}</span></div>`).join("");
+  return `<div class="head"><div><div class="crumb">Communication</div><h1>Weekly updates</h1></div></div>
+  <div class="wk">
+    <section class="panel"><div class="ctl">
+      <label class="fld"><span>Covering</span><select class="inp" id="w-scope">${sopts}</select></label>
+      <div class="fld"><span>Audience</span><div class="seg"><button type="button" data-act="aud" data-a="internal" class="${w.audience==="internal"?"on":""}">Internal team</button><button type="button" data-act="aud" data-a="client" class="${w.audience==="client"?"on":""}" ${canClient?"":"disabled"} title="${canClient?"":"Client updates are switched on per client in People & setup"}">Client</button></div>
+        <span class="hint">${canClient?"Client view shows only items marked client-visible and only updates marked visible to client.":"Pick a single client with client updates switched on (Expenova clients) to prepare a client-facing email."}</span></div>
+      <div class="fld"><span>Period — 7 days ending</span><div class="actions"><input type="date" class="inp" id="w-end" value="${h(w.weekEnd)}" style="flex:1"><button type="button" class="btn sm" data-act="lastwk">Last week (Mon–Sun)</button></div><span class="hint">${fmt(addDays(w.weekEnd,-6))} – ${fmt(w.weekEnd)}</span></div>
+      <label class="fld"><span>To <em>(from Accountable, Responsible and Informed)</em></span><textarea class="inp" id="w-to" rows="3"></textarea></label>
+      <label class="fld"><span>Cc</span><input class="inp" id="w-cc" value="${h(w.cc)}" placeholder="optional"></label>
+      <label class="fld"><span>Subject</span><input class="inp" id="w-subj"></label>
+      <div class="actions">${S.mailOK?`<button class="btn pri" data-act="outlook">Send email</button>`:""}<button class="btn ${S.mailOK?"":"pri"}" data-act="copyw">Copy email text</button></div>
+      <span class="hint" id="w-note">${S.mailOK?"Sends from the tracker to the people above, with replies going to you. Check the preview first.":S.canCreate?"Copy the text into your email. Sending from here works once email is set up on the server.":"Copy the text into your email."}</span>
+    </div></section>
+    <section class="panel"><header><h2>Preview</h2><span class="sub" id="w-count"></span></header><div class="mail" id="w-prev"></div></section>
+  </div>
+  <section class="panel"><header><h2>Sent log</h2><span class="sub">Every drafted or copied update is recorded here</span></header>${hist?`<div class="hist">${hist}</div>`:`<div class="empty">No weekly updates logged yet.</div>`}</section>`;
+}
+function hydrateWeekly(){
+  const r = buildReport();
+  $("#w-prev").innerHTML = r.body;
+  $("#w-to").value = S.wk.toTouched ? S.wk.to : r.to.join(", ");
+  $("#w-subj").value = S.wk.subjTouched ? S.wk.subject : r.subject;
+  $("#w-count").textContent = `${r.counts.items} items · ${r.to.length} suggested recipients`;
+}
+const splitEmails = s => (s||"").split(/[\s,;]+/).map(x=>x.trim()).filter(x=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
+async function logUpdate(r, channel, to){
+  try { await S.db.collection("updates").add({at:nowISO(), scope:S.wk.scope, scopeLabel:scopeLabel(S.wk.scope), audience:S.wk.audience, weekEnd:S.wk.weekEnd, to, items:r.counts.items, channel, by:S.meId||null}); } catch(_){}
+}
+async function outlookDraft(btn){
+  const r = buildReport(); const to = splitEmails($("#w-to").value); const cc = splitEmails($("#w-cc").value);
+  if (!to.length){ toast("Add at least one recipient email."); return; }
+  if (btn.dataset.armed !== "1"){ btn.dataset.armed = "1"; btn.textContent = `Send to ${to.length+cc.length} people?`; btn.classList.add("arm"); setTimeout(()=>{ if (btn.isConnected){ btn.dataset.armed=""; btn.textContent="Send email"; btn.classList.remove("arm"); } }, 5000); return; }
+  btn.dataset.armed = ""; btn.classList.remove("arm");
+  btn.disabled = true; btn.textContent = "Sending…";
+  try {
+    await window.trackerApi("/api/mail/send", {to, cc, subject: $("#w-subj").value, html: r.body});
+    $("#w-note").textContent = `Sent to ${to.length+cc.length} people.`;
+    toast("Weekly update sent"); await logUpdate(r, "email", to);
+  } catch(e){ $("#w-note").textContent = "Couldn't send: " + (e && e.message || "unknown error"); }
+  btn.disabled = false; btn.textContent = "Send email";
+}
+async function copyWeekly(){
+  const r = buildReport(); const txt = `To: ${$("#w-to").value}\nSubject: ${$("#w-subj").value}\n\n${r.text}`;
+  try { await navigator.clipboard.writeText(txt); toast("Email text copied"); await logUpdate(r, "copy", splitEmails($("#w-to").value)); }
+  catch(_){ const sel = window.getSelection(); const rg = document.createRange(); rg.selectNodeContents($("#w-prev")); sel.removeAllRanges(); sel.addRange(rg); toast("Copy blocked here — the preview is selected, press Ctrl/⌘+C"); }
+}
+
+/* ---------- setup ---------- */
+function viewSetup(){
+  const e = S.setup.editPerson ? person(S.setup.editPerson) || {} : {};
+  const coOpts = cur => `<option value="">Group-wide</option>` + companies().map(c=>`<option value="${h(c.id)}" ${c.id===cur?"selected":""}>${h(c.name)}</option>`).join("");
+  const allClients = companies().flatMap(c=>(c.clients||[]).map(k=>({c,k})));
+  const clOpts = cur => `<option value="">—</option>` + allClients.map(({c,k})=>`<option value="${h(k.id)}" ${k.id===cur?"selected":""}>${h(c.name)} · ${h(k.name)}</option>`).join("");
+  const tmOpts = cur => `<option value="">—</option>` + allClients.flatMap(({k})=>(k.teams||[]).map(t=>`<option value="${h(t.id)}" ${t.id===cur?"selected":""}>${h(k.name)} · ${h(t.name)}</option>`)).join("");
+  const people = S.people.slice().sort((a,b)=>(a.active===false)-(b.active===false) || a.name.localeCompare(b.name));
+  const prow = p => { const k = companies().flatMap(c=>c.clients||[]).find(x=>x.id===p.clientId); const t = k && (k.teams||[]).find(x=>x.id===p.teamId);
+    return `<div class="prow" ${p.active===false?'style="opacity:.55"':""}><span><b>${h(p.name)}</b>${p.side==="client"?` <span class="chip blue">client</span>`:""}<br><span class="sub rl">${h(p.role||"")}</span></span><span class="em">${p.email?h(p.email):`<span style="color:var(--amber)">No email · no update requests</span>`}${p.email&&p.emailRequests===false?` · requests off`:""}</span><span class="rl sub">${h([co(p.companyId)?.name, k?.name, t?.name].filter(Boolean).join(" · ")||"Group-wide")}</span><span>${accessChip(p)}${S.canAdmin?` <button class="btn sm" data-act="editp" data-id="${h(p.id)}">Edit</button>`:""}</span></div>`; };
+  const tree = companies().map(c=>`<div class="c"><div><span class="dot" style="background:${coColor(c.id)}"></span><b>${h(c.name)}</b><span class="badge">${h(c.code)}</span></div>
+    <div class="cl2">${(c.clients||[]).map(k=>`<div><b>${h(k.name)}</b><span class="badge">${h(k.code)}</span>
+      ${S.canAdmin?`<label class="chk"><input type="checkbox" data-act="toggleShare" data-co="${h(c.id)}" data-cl="${h(k.id)}" ${k.clientSharing?"checked":""}> client updates</label>`:(k.clientSharing?`<span class="chip blue">client updates</span>`:"")}
+      ${(k.teams||[]).map(t=>`<span class="chip">${h(t.name)} team</span>`).join("")}
+      ${S.canAdmin?`<button class="btn sm" data-act="addTeam" data-co="${h(c.id)}" data-cl="${h(k.id)}">+ team</button>`:""}</div>`).join("") || `<div class="sub">No clients yet</div>`}
+      ${S.canAdmin?`<div><input class="inp" id="nc-${h(c.id)}" placeholder="New client name" style="flex:1 1 160px"><input class="inp" id="ncc-${h(c.id)}" placeholder="Code" style="width:90px"><button class="btn sm" data-act="addClient" data-co="${h(c.id)}">Add client</button></div>`:""}
+    </div></div>`).join("");
+  return `<div class="head"><div><div class="crumb">Directory and structure</div><h1>People &amp; setup</h1></div></div>
+  <div class="setgrid">
+    <section class="panel"><header><h2>People directory</h2><span class="sub">${S.people.length} people · used in ARCI and email lists</span></header>
+      ${S.canAdmin?`<div class="form">
+        <div class="grid2">
+          <label class="fld"><span>Name</span><input class="inp" id="p-name" value="${h(e.name)}"></label>
+          <label class="fld"><span>Email</span><input class="inp" id="p-email" type="email" value="${h(e.email)}"></label>
+          <label class="fld"><span>Role</span><select class="inp" id="p-role">${ROLES.map(r=>`<option ${r===e.role?"selected":""}>${r}</option>`).join("")}</select></label>
+          <label class="fld"><span>Side</span><select class="inp" id="p-side"><option value="internal" ${e.side!=="client"?"selected":""}>Our team</option><option value="client" ${e.side==="client"?"selected":""}>Client contact</option></select></label>
+          <label class="fld"><span>Company</span><select class="inp" id="p-co">${coOpts(e.companyId)}</select></label>
+          <label class="fld"><span>Client</span><select class="inp" id="p-cl">${clOpts(e.clientId)}</select></label>
+          <label class="fld"><span>Team</span><select class="inp" id="p-tm">${tmOpts(e.teamId)}</select></label>
+          <label class="fld"><span>Email update requests</span><select class="inp" id="p-req"><option value="1" ${e.emailRequests!==false?"selected":""}>Send when updates are due</option><option value="0" ${e.emailRequests===false?"selected":""}>Don't email this person</option></select></label>
+          <label class="fld"><span>Status</span><select class="inp" id="p-active"><option value="1" ${e.active!==false?"selected":""}>Active</option><option value="0" ${e.active===false?"selected":""}>Inactive</option></select></label>
+        </div>
+        <div class="actions"><button class="btn pri" data-act="savep">${S.setup.editPerson?"Save person":"Add person"}</button>${S.setup.editPerson?`<button class="btn" data-act="cancelp">Cancel</button>`:""}</div>
+        ${S.setup.editPerson?accessBox(e):`<span class="hint">Add the person first, then press Edit on their row to give them a login.</span>`}
+      </div>`:""}
+      <div class="plist">${people.map(prow).join("") || `<div class="empty">No people yet.</div>`}</div>
+    </section>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      ${S.canAdmin?settingsPanel():""}
+      <section class="panel"><header><h2>Companies, clients, teams</h2><span class="sub">${S.canAdmin?"Each client is its own container":"Editors can change structure"}</span></header><div class="tree">${tree}</div></section>
+      <section class="panel"><header><h2>Action types</h2></header><div class="form"><div style="display:flex;flex-wrap:wrap;gap:6px">${types().map(t=>`<span class="pchip">${h(t)}${S.canAdmin?`<button data-act="delType" data-t="${h(t)}" aria-label="Remove ${h(t)}">×</button>`:""}</span>`).join("")}</div>
+        ${S.canAdmin?`<div class="actions"><input class="inp" id="nt" placeholder="New type, e.g. Board review" style="flex:1"><button class="btn sm" data-act="addType">Add type</button></div>`:""}</div></section>
+      <section class="panel"><header><h2>How the tracker works</h2></header><div class="legend">
+        <div><b>A · R · C · I</b>Accountable owns the outcome (one person). Responsible does the work and posts updates. Consulted gives input. Informed receives the weekly update.</div>
+        <div><b>NBA · NBD</b>Next best action: the single next step. Next best date: when that step should be done. Both are required on every open item.</div>
+        <div><b>P1 – P4</b>P1 critical, daily follow-up. P2 this week. P3 within the month. P4 when capacity allows.</div>
+        <div><b>Long deadlines</b>Items due more than ${LONG_DAYS} days out require a progress update every 3, 7 or 14 days. Missed updates show as “Update due” and in the weekly email.</div>
+        <div><b>Logins</b>Admins see everything. Editors manage actions in their assigned companies or clients. Contributors see their scope and update items where they are A, R or C. Client logins see only items shared with their client.</div>
+        <div><b>Update reminders</b>When switched on, people with a login get a weekday-morning email listing their items that need an update, with a link straight to each item.</div>
+        <div><b>Repeat reminders</b>Meetings and ongoing items repeat on a set frequency. Mark each cycle done; the next date rolls forward.</div>
+        <div><b>Client updates</b>Switched on per client. Only items and updates explicitly marked client-visible are included.</div>
+      </div></section>
+    </div>
+  </div>`;
+}
+async function saveStructure(mut){
+  const s = JSON.parse(JSON.stringify(S.structure)); mut(s);
+  try { await S.db.doc("org/structure").set(s); toast("Structure saved"); } catch(e){ toast(writeErr(e)); }
+}
+const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40) || ("x"+Date.now());
+async function savePerson(){
+  const g = id => $("#"+id).value;
+  const name = g("p-name").trim(); const email = g("p-email").trim();
+  if (!name){ toast("Add the person's name."); return; }
+  if (email && !splitEmails(email).length){ toast("That email address doesn't look right."); return; }
+  const data = {name, email, role:g("p-role"), side:g("p-side"), companyId:g("p-co"), clientId:g("p-cl"), teamId:g("p-tm"), active:g("p-active")==="1", emailRequests:g("p-req")==="1"};
+  try {
+    if (S.setup.editPerson){ await S.db.doc("people/"+S.setup.editPerson).update(data); toast("Person saved"); }
+    else { await S.db.collection("people").add(data); toast(`${name} added`); }
+    S.setup.editPerson = null; render();
+  } catch(e){ toast(writeErr(e)); }
+}
+async function quickAddPerson(role){
+  const wrap = $("#pk-"+role); if (!wrap) return;
+  wrap.insertAdjacentHTML("afterend", `<div class="compose" id="qa-${role}"><div class="grid2"><input class="inp" id="qa-n" placeholder="Name"><input class="inp" id="qa-e" placeholder="Email"><select class="inp" id="qa-r">${ROLES.map(r=>`<option>${r}</option>`).join("")}</select><select class="inp" id="qa-s"><option value="internal">Our team</option><option value="client">Client contact</option></select></div><div class="rowx"><button class="btn pri sm" data-act="qaSave" data-role="${role}">Add and assign</button><button class="btn sm" data-act="qaCancel" data-role="${role}">Cancel</button></div></div>`);
+  $("#qa-n").focus();
+}
+
+/* ---------- present mode ---------- */
+let P = null;
+function scTitle(sc){
+  if (!sc || !sc.co) return {title:"Group action review", sub:"PeopleOCity · Expenova · UKB IT Solutions"};
+  const c = co(sc.co); const k = sc.cl && sc.cl!=="_co" ? cl(sc.co, sc.cl) : null; const t = k && sc.tm ? tm(sc.co, sc.cl, sc.tm) : null;
+  if (t) return {title:`${k.name} · ${t.name}`, sub:c.name};
+  if (k) return {title:k.name, sub:c.name};
+  return {title: sc.cl==="_co" ? `${c.name} — company-level` : c.name, sub:"Company review"};
+}
+function chunk(arr, n){ const out = []; for (let i=0;i<arr.length;i+=n) out.push(arr.slice(i,i+n)); return out.length?out:[[]]; }
+function sItem(a, mode, showC){
+  const d = derive(a); const resp = (a.responsible||[]).map(pname).join(", ");
+  let meta, note = "";
+  if (mode==="closed"){ meta = `Closed ${fmt(closedDay(a))} · ${pname(a.accountable)}${a.due&&!noDue(a)?(closedDay(a)>a.due?` · <span class="s-amber">${diffDays(closedDay(a),a.due)}d late</span>`:` · <span class="s-green">on time</span>`):""}`; note = a.closureNote||""; }
+  else if (mode==="upd"){ meta = `${h(resp||pname(a.accountable))} · last update ${d.since} days ago · asked every ${a.updateEvery} days`; }
+  else if (mode==="rem"){ meta = `${h(freqLabel(a.recur.freq))} · next ${fmt(a.recur.next)} · ${h(pname(a.accountable))}`; }
+  else { meta = `${h(pname(a.accountable))}${resp && resp!==pname(a.accountable)?` · ${h(resp)}`:""}${noDue(a)?"":` · ${a.due?`<span class="${d.overdue?"s-red":""}">due ${fmt(a.due)}${d.overdue?` (${diffDays(today(),a.due)}d late)`:""}</span>`:"no due date"}`}`; note = a.nba ? `Next: ${a.nba} · by ${fmt(a.nbd)}` : ""; }
+  return `<li><div class="s-top"><span class="s-ref">${h(a.ref)}</span><span class="pri ${h(a.priority)}">${h(a.priority)}</span>${showC?`<span class="s-c">${h(containerLabel(a))}</span>`:""}</div>
+    <div class="s-t">${h(a.title)}</div><div class="s-m">${meta}</div>${note?`<div class="s-n">${h(note)}</div>`:""}</li>`;
+}
+function listSlides(kicker, title, items, mode, showC, accent, emptyMsg){
+  if (!items.length) return [];
+  const pages = chunk(items, 5);
+  return pages.map((pg,i)=>`<div class="s-kicker" style="color:${accent}">${kicker}</div><h2 class="s-h">${title}${pages.length>1?` <span class="s-pg">${i+1}/${pages.length}</span>`:""}</h2><ul class="s-list">${pg.map(a=>sItem(a,mode,showC)).join("")}</ul>`);
+}
+function buildSlides(sc){
+  const acts = S.actions.filter(a=>inScope(a,sc));
+  const s = stats(acts); const lw = weekBounds("last"); const T = scTitle(sc);
+  const multi = !sc || !sc.co || !sc.cl || (sc.cl && !sc.tm && (cl(sc.co,sc.cl)?.teams||[]).length);
+  const open = sortActions(acts.filter(a=>derive(a).open));
+  const closed = closedBetween(acts, lw).filter(a=>a.status==="Done");
+  const late = open.filter(a=>derive(a).overdue);
+  const focus = open.filter(a=>!derive(a).overdue && (a.priority==="P1"||a.priority==="P2"));
+  const coming = open.filter(a=>derive(a).due7 && !(a.priority==="P1"||a.priority==="P2"));
+  const upd = open.filter(a=>derive(a).updDue);
+  const rem = open.filter(a=>derive(a).remDue);
+  const slides = [];
+  const stat = (v,k,cls) => `<div class="s-stat ${v?cls:""}"><b>${v}</b><span>${k}</span></div>`;
+  slides.push(`<div class="s-kicker">${h(T.sub)} · ${fmt(today())}</div><h1 class="s-hero">${h(T.title)}</h1><div class="s-lede">Weekly action review · last week ${fmt(lw.start)} – ${fmt(lw.end)}</div>
+    <div class="s-stats">${stat(s.open,"Open","")}${stat(s.overdue,"Past due","red")}${stat(s.p12,"Open P1/P2","amber")}${stat(s.closedLast,"Closed last week","green")}${stat(s.upd,"Updates pending","amber")}</div>`);
+  // health slide when scope spans several containers
+  const rowsFor = [];
+  const add = (label, list, lvl, color) => { if (list.length) rowsFor.push({label, list, lvl, color}); };
+  for (const c of companies()){
+    if (sc && sc.co && sc.co!==c.id) continue;
+    const ca = S.actions.filter(a=>a.companyId===c.id);
+    if (!sc || !sc.co) add(c.name, ca, 0, coColor(c.id));
+    for (const k of c.clients||[]){
+      if (sc && sc.cl && sc.cl!==k.id) continue;
+      const ka = ca.filter(a=>a.clientId===k.id); add(k.name, ka, 1);
+      if (sc && sc.cl) for (const t of k.teams||[]) add(t.name+" team", ka.filter(a=>a.teamId===t.id), 2);
+    }
+  }
+  if (rowsFor.length > 1){
+    const ragName = {r:"At risk", a:"Watch", g:"On track"};
+    slides.push(`<div class="s-kicker">Health</div><h2 class="s-h">Where each area stands</h2><div class="s-health">${rowsFor.map(r=>{ const x = stats(r.list); const g = rag(r.list);
+      return `<div class="s-hrow l${r.lvl}"><span class="s-rag ${g}"></span><span class="s-hl">${r.color?`<span class="dot" style="background:${r.color}"></span>`:""}${h(r.label)}</span><span class="s-hn"><b>${x.open}</b> open</span><span class="s-hn ${x.overdue?"s-red":""}"><b>${x.overdue}</b> late</span><span class="s-hn"><b>${x.closedLast}</b> closed</span><span class="s-hs ${g}">${ragName[g]}</span></div>`; }).join("")}</div>`);
+  }
+  slides.push(...listSlides("Wins", "Closed last week", closed, "closed", multi, "var(--s-green)"));
+  if (!closed.length) slides.push(`<div class="s-kicker" style="color:var(--s-green)">Wins</div><h2 class="s-h">Closed last week</h2><div class="s-empty">Nothing was closed between ${fmt(lw.start)} and ${fmt(lw.end)}.</div>`);
+  slides.push(...listSlides("Needs attention", "Past due date", late, "open", multi, "var(--s-red)"));
+  slides.push(...listSlides("Focus", "Priority P1 and P2", focus, "open", multi, "var(--s-amber)"));
+  slides.push(...listSlides("Next 7 days", "Coming up", coming, "open", multi, "var(--s-blue)"));
+  slides.push(...listSlides("Accountability", "Updates still pending", upd, "upd", multi, "var(--s-amber)"));
+  slides.push(...listSlides("Recurring", "Repeat reminders due", rem, "rem", multi, "var(--s-blue)"));
+  slides.push(`<div class="s-kicker">Next steps</div><h1 class="s-hero sm">Thank you</h1><div class="s-lede">${late.length?`${late.length} item${late.length>1?"s":""} past due · `:""}${upd.length?`${upd.length} update${upd.length>1?"s":""} owed · `:""}next review in one week</div>`);
+  return slides;
+}
+function openPresent(){
+  const sc = S.view.kind==="container" ? S.view : {kind:"all"};
+  P = {slides: buildSlides(sc), i:0, sc};
+  const host = document.getElementById("presentHost");
+  host.innerHTML = `<div class="present" role="dialog" aria-modal="true" aria-label="Presentation">
+    <div class="p-bar"><span class="p-title">${h(scTitle(sc).title)}</span><span class="p-count" id="pCount"></span><span class="p-sp"></span>
+      <button class="p-btn" data-act="pfull" aria-label="Full screen">Full screen</button><button class="p-btn" data-act="pclose" aria-label="Exit presentation">Done</button></div>
+    <div class="p-stage-wrap" id="pWrap"><div class="p-stage" id="pStage"></div>
+      <button class="p-nav prev" data-act="pprev" aria-label="Previous slide">‹</button><button class="p-nav next" data-act="pnext" aria-label="Next slide">›</button></div>
+    <div class="p-dots" id="pDots"></div></div>`;
+  document.body.style.overflow = "hidden";
+  renderSlide(); fitStage();
+}
+function renderSlide(){
+  if (!P) return;
+  $("#pStage").innerHTML = `<div class="slide">${P.slides[P.i]}</div>`;
+  $("#pCount").textContent = `${P.i+1} of ${P.slides.length}`;
+  $("#pDots").innerHTML = P.slides.map((_,i)=>`<button class="p-dot ${i===P.i?"on":""}" data-act="pgo" data-i="${i}" aria-label="Slide ${i+1}"></button>`).join("");
+  document.querySelector(".p-nav.prev").hidden = P.i===0; document.querySelector(".p-nav.next").hidden = P.i===P.slides.length-1;
+}
+function fitStage(){
+  const w = $("#pWrap"), st = $("#pStage"); if (!w || !st) return;
+  const sc = Math.min(w.clientWidth/1280, w.clientHeight/720);
+  st.style.transform = `translate(-50%,-50%) scale(${sc})`;
+}
+function closePresent(){ P = null; $("#presentHost").innerHTML = ""; document.body.style.overflow = ""; try { if (document.fullscreenElement) document.exitFullscreen(); } catch(_){} }
+function stepSlide(n){ if (!P) return; P.i = Math.max(0, Math.min(P.slides.length-1, P.i+n)); renderSlide(); }
+window.addEventListener("resize", fitStage);
+let tx = null;
+document.addEventListener("touchstart", e => { if (P) tx = e.touches[0].clientX; }, {passive:true});
+document.addEventListener("touchend", e => { if (P && tx !== null){ const dx = e.changedTouches[0].clientX - tx; if (Math.abs(dx) > 50) stepSlide(dx < 0 ? 1 : -1); } tx = null; }, {passive:true});
+document.addEventListener("fullscreenchange", ()=>setTimeout(fitStage,50));
+
+/* ---------- logins, account, settings ---------- */
+const ROLE_LABEL = {admin:"Admin", editor:"Editor", contributor:"Contributor", client:"Client view"};
+const ROLE_HELP = {none:"No login. They can still be assigned and named in emails.", admin:"Sees and changes everything, manages logins and settings.", editor:"Creates and edits actions in the companies or clients ticked below.", contributor:"Sees the companies or clients ticked below, plus any item they're on. Posts updates and changes status, next step and dates on items where they are A, R or C.", client:"Sees only items marked client-visible for their own client, and can comment on them. Set their client in the directory first."};
+const userOf = id => S.users.find(u=>u.personId===id);
+function accessChip(p){
+  if (!S.canAdmin) return "";
+  const u = userOf(p.id);
+  return u ? (u.loginEnabled ? `<span class="chip role">${h(ROLE_LABEL[u.role]||u.role)}</span>` : `<span class="chip">Login off</span>`) : "";
+}
+function accessBox(e){
+  const u = userOf(S.setup.editPerson);
+  const role = u && u.loginEnabled ? u.role : "none";
+  const sc = new Set(u ? u.scopes : []);
+  const cb = (v, label, cls) => `<label class="${cls}"><input type="checkbox" class="acc-sc" value="${h(v)}" ${sc.has(v)?"checked":""}> ${h(label)}</label>`;
+  let scopes = "";
+  for (const c of allCompanies()){
+    scopes += cb(c.id, `All of ${c.name}`, "");
+    for (const k of c.clients||[]){ scopes += cb(`${c.id}:${k.id}`, k.name, "l1"); for (const t of k.teams||[]) scopes += cb(`${c.id}:${k.id}:${t.id}`, `${t.name} team only`, "l2"); }
+  }
+  const status = u ? `${u.hasPassword ? "Password set" : "No password yet"}${u.lastLogin ? ` · last sign-in ${fmtTime(new Date(u.lastLogin).toISOString())}` : " · hasn't signed in yet"}` : "No login yet";
+  return `<div class="acc-box"><h3>Login access</h3>
+    <label class="fld"><span>Access</span><select class="inp" id="acc-role">${["none","admin","editor","contributor","client"].map(r=>`<option value="${r}" ${r===role?"selected":""}>${r==="none"?"No login":ROLE_LABEL[r]}</option>`).join("")}</select></label>
+    <span class="hint" id="acc-help">${h(ROLE_HELP[role])}</span>
+    <div class="fld" id="acc-scopes-wrap" ${["editor","contributor"].includes(role)?"":"hidden"}><span>Can see</span><div class="acc-scopes">${scopes}</div></div>
+    ${S.me.msEnabled?`<label class="chk"><input type="checkbox" id="acc-ms" ${!u || u.msAllowed ? "checked" : ""}> Allow “Sign in with Microsoft” for this email</label>`:""}
+    <span class="hint">${h(status)}</span>
+    <div class="actions"><button class="btn pri sm" data-act="saveAccess">Save access</button>${u && u.loginEnabled ? `${S.mail?`<button class="btn sm" data-act="invite" data-send="1">Email invite</button>`:""}<button class="btn sm" data-act="invite" data-send="0">Get invite link</button>` : ""}</div>
+    <div id="acc-out"></div></div>`;
+}
+async function saveAccess(){
+  const pid = S.setup.editPerson; const role = $("#acc-role").value;
+  const scopes = [...document.querySelectorAll(".acc-sc:checked")].map(x=>x.value);
+  try {
+    if (role === "none"){
+      if (userOf(pid)){ const res = await fetch(`/api/admin/users/${encodeURIComponent(pid)}`, {method:"DELETE", headers:{"x-tracker":"1"}}); const j = await res.json().catch(()=>({})); if (!res.ok) throw new Error(j.error || "Couldn't remove the login"); }
+      toast("Login removed");
+    }
+    else {
+      if (["editor","contributor"].includes(role) && !scopes.length){ toast("Tick at least one company or client they can see."); return; }
+      await window.trackerApi(`/api/admin/users/${encodeURIComponent(pid)}`, {role, scopes, loginEnabled:true, msAllowed: $("#acc-ms") ? $("#acc-ms").checked : true});
+      toast(`Access saved: ${ROLE_LABEL[role]}`);
+    }
+    await loadUsers(); render();
+  } catch(e){ toast(e.message || "Couldn't save access"); }
+}
+async function invite(send){
+  const pid = S.setup.editPerson;
+  try {
+    const r = await window.trackerApi(`/api/admin/users/${encodeURIComponent(pid)}/invite`, {send});
+    $("#acc-out").innerHTML = `<div class="fld"><span>${r.emailed ? "Invite emailed. You can also share this link:" : r.mailError ? "Email failed (" + h(r.mailError) + "). Share this link instead:" : "Share this link with them (valid 7 days):"}</span><div class="linkbox" id="acc-link">${h(r.link)}</div><button class="btn sm" data-act="copyLink" style="align-self:flex-start">Copy link</button></div>`;
+    if (r.emailed) toast("Invite emailed");
+  } catch(e){ toast(e.message || "Couldn't create the invite"); }
+}
+function settingsPanel(){
+  const st = S.settings || {};
+  return `<section class="panel"><header><h2>Sign-in &amp; automatic emails</h2></header><div class="settings">
+    <span class="hint">Email: ${S.mail ? "set up" : "not set up yet (add SMTP settings on the server)"} · Microsoft sign-in: ${S.me.msEnabled ? "on" : "not set up yet"}</span>
+    <label class="chk"><input type="checkbox" data-act="setSetting" data-k="requestsEnabled" ${st.requestsEnabled?"checked":""} ${S.mail?"":"disabled"}> Weekday 9:45 AM: email people whose items need an update</label>
+    <label class="chk"><input type="checkbox" data-act="setSetting" data-k="digestEnabled" ${st.digestEnabled?"checked":""} ${S.mail?"":"disabled"}> Monday 8:30 AM: email admins a summary of last week</label>
+    <div class="actions"><button class="btn sm" data-act="runJob" data-job="requests" data-dry="1">Preview who'd get reminders</button>${S.mail?`<button class="btn sm" data-act="runJob" data-job="requests" data-dry="0">Send reminders now</button><button class="btn sm" data-act="runJob" data-job="digest" data-dry="0">Send summary now</button>`:""}</div>
+    <div class="out" id="job-out"></div></div></section>`;
+}
+async function runJob(el){
+  const dry = el.dataset.dry === "1";
+  if (!dry && el.dataset.armed !== "1"){ el.dataset.armed = "1"; const t = el.textContent; el.textContent = "Press again to send"; el.classList.add("arm"); setTimeout(()=>{ if (el.isConnected){ el.dataset.armed=""; el.textContent=t; el.classList.remove("arm"); } }, 4000); return; }
+  el.disabled = true;
+  try {
+    const r = await window.trackerApi(`/api/admin/run/${el.dataset.job}`, {dryRun: dry});
+    $("#job-out").textContent = el.dataset.job === "requests"
+      ? `${dry ? "Would email" : "Emailed"}: ${r.sent.length ? r.sent.map(x=>`${x.name} (${x.items})`).join(", ") : "nobody"}${r.skipped.length ? `\nNo login or email, so skipped: ${[...new Set(r.skipped)].join(", ")}` : ""}`
+      : `Summary sent to ${r.to.join(", ") || "no admins"}.`;
+  } catch(e){ $("#job-out").textContent = e.message || "Failed"; }
+  el.disabled = false;
+}
+function openAccount(){
+  closeDrawer();
+  $("#drawerHost").innerHTML = `<div class="scrim" data-act="close"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="Account" style="width:min(460px,calc(100% - 20px))">
+    <div class="dhead"><div><div class="crumb">${h(ROLE_LABEL[S.role]||S.role)}</div><h2>${h(S.me.name)}</h2><div class="sub">${h(S.me.email)}</div></div><button class="btn sm x" data-act="close">Close</button></div>
+    <div class="dbody"><div class="sect"><h3>${S.me.hasPassword ? "Change password" : "Set a password"}</h3>
+      <form id="pwf" style="display:flex;flex-direction:column;gap:10px">
+        <input type="email" value="${h(S.me.email)}" autocomplete="username" hidden>
+        ${S.me.hasPassword?`<label class="fld"><span>Current password</span><input class="inp" type="password" id="pw0" autocomplete="current-password" required></label>`:""}
+        <label class="fld"><span>New password (at least 10 characters)</span><input class="inp" type="password" id="pw1" autocomplete="new-password" minlength="10" required></label>
+        <label class="fld"><span>Repeat new password</span><input class="inp" type="password" id="pw2" autocomplete="new-password" minlength="10" required></label>
+        <button class="btn pri" type="submit" style="align-self:flex-start">Save password</button></form></div>
+      <div class="sect"><h3>Session</h3><button class="btn danger" data-act="signout" style="align-self:flex-start">Sign out</button></div></div></aside>`;
+  $("#pwf").onsubmit = async ev => {
+    ev.preventDefault();
+    if ($("#pw1").value !== $("#pw2").value){ toast("The new passwords don't match."); return; }
+    try { await window.trackerApi("/api/auth/change-password", {current: $("#pw0") ? $("#pw0").value : "", next: $("#pw1").value}); S.me.hasPassword = true; toast("Password saved"); closeDrawer(); }
+    catch(e){ toast(e.message || "Couldn't save the password"); }
+  };
+}
+async function signOut(){ try { await window.trackerApi("/api/auth/logout", {}); } catch(_){} location.href = "/login"; }
+
+/* ---------- events ---------- */
+document.addEventListener("click", async ev => {
+  const el = ev.target.closest("[data-act]"); if (!el) return;
+  const act = el.dataset.act;
+  if (el.tagName === "INPUT" && act==="setSetting"){ try { await S.db.doc("org/settings").set({...(S.settings||{}), [el.dataset.k]: el.checked}); toast("Setting saved"); } catch(e){ toast(writeErr(e)); } return; }
+  if (el.tagName === "INPUT") { if (act==="toggleShare") { const {co:c, cl:k} = el.dataset; await saveStructure(s=>{ const x = s.companies.find(q=>q.id===c).clients.find(q=>q.id===k); x.clientSharing = el.checked; }); } return; }
+  switch(act){
+    case "nav": { const v = el.dataset.v; if (v==="c") go({kind:"container", co:el.dataset.co, cl:el.dataset.cl||"", tm:el.dataset.tm||""}); else go({kind:v}); break; }
+    case "flag": S.filters.flag = el.dataset.flag; if (el.dataset.flag) S.filters.status = "open"; render(); break;
+    case "drill": { ev.stopPropagation(); const fl = el.dataset.flag;
+      const target = {kind:"container", co:el.dataset.co||"", cl:el.dataset.cl||"", tm:el.dataset.tm||""};
+      if (viewKey(target)!==viewKey(S.view)) go(target);
+      S.filters = {...S.filters, q:"", priority:"", type:"", person:"", flag: fl==="open" ? "" : fl, status: fl==="closedLast" ? "all" : "open"};
+      render(); window.scrollTo(0,0); break; }
+    case "new": openDrawer(null); break;
+    case "open": openDrawer(el.dataset.id); break;
+    case "close": closeDrawer(); break;
+    case "save": saveDraft(); break;
+    case "cycle": cycleDone(); break;
+    case "del": delAction(el); break;
+    case "post": postComment(); break;
+    case "ckind": CKIND = el.dataset.k; el.parentElement.querySelectorAll("button").forEach(b=>b.classList.toggle("on", b===el)); $("#c-text").placeholder = CKIND==="update" ? "Progress since last update, what is next, any blockers" : "Comment or question"; break;
+    case "unpick": { readForm(); const r = el.dataset.role, id = el.dataset.id; if (r==="accountable") D.accountable = ""; else D[r] = (D[r]||[]).filter(x=>x!==id); $("#pk-"+r).outerHTML = pickerHTML(r, D[r]); break; }
+    case "qaSave": { const r = el.dataset.role; const name = $("#qa-n").value.trim(); if (!name){ toast("Add a name."); return; }
+      const email = $("#qa-e").value.trim();
+      try { const ref = await S.db.collection("people").add({name, email, role:$("#qa-r").value, side:$("#qa-s").value, companyId:D.companyId, clientId:$("#qa-s").value==="client"?D.clientId:"", teamId:"", active:true});
+        S.people.push({id:ref.id, name, email, role:$("#qa-r").value, side:$("#qa-s").value, companyId:D.companyId, clientId:D.clientId});
+        if (r==="accountable") D.accountable = ref.id; else D[r] = [...(D[r]||[]), ref.id];
+        $("#qa-"+r).remove(); $("#pk-"+r).outerHTML = pickerHTML(r, D[r]); toast(`${name} added`);
+      } catch(e){ toast(writeErr(e)); } break; }
+    case "qaCancel": $("#qa-"+el.dataset.role)?.remove(); break;
+    case "weeklyHere": { const v = S.view; S.wk.scope = v.co ? `c:${v.co}:${v.cl==="_co"?"":v.cl||""}:${v.tm||""}` : "all"; S.wk.toTouched = S.wk.subjTouched = false; S.wk.audience = scopeAllowsClient(S.wk.scope) ? S.wk.audience : "internal"; go({kind:"weekly"}); break; }
+    case "aud": if (el.disabled) return; S.wk.audience = el.dataset.a; S.wk.toTouched = S.wk.subjTouched = false; render(); break;
+    case "outlook": outlookDraft(el); break;
+    case "copyw": copyWeekly(); break;
+    case "account": openAccount(); break;
+    case "signout": signOut(); break;
+    case "saveAccess": saveAccess(); break;
+    case "invite": invite(el.dataset.send === "1"); break;
+    case "copyLink": { const t = $("#acc-link").textContent; try { await navigator.clipboard.writeText(t); toast("Link copied"); } catch(_){ const rg = document.createRange(); rg.selectNodeContents($("#acc-link")); const sl = getSelection(); sl.removeAllRanges(); sl.addRange(rg); toast("Press Ctrl/⌘+C to copy"); } break; }
+    case "runJob": runJob(el); break;
+    case "present": openPresent(); break;
+    case "pclose": closePresent(); break;
+    case "pnext": stepSlide(1); break;
+    case "pprev": stepSlide(-1); break;
+    case "pgo": P.i = +el.dataset.i; renderSlide(); break;
+    case "pfull": { const n = document.querySelector(".present"); try { if (document.fullscreenElement) await document.exitFullscreen(); else await n.requestFullscreen(); } catch(_){ toast("Full screen isn't available here"); } setTimeout(fitStage,80); break; }
+    case "crange": S.closedRange = el.dataset.r; render(); break;
+    case "copyClosed": copyClosed(); break;
+    case "lastwk": S.wk.weekEnd = weekBounds("last").end; S.wk.subjTouched = false; render(); break;
+    case "editp": S.setup.editPerson = el.dataset.id; render(); window.scrollTo(0,0); break;
+    case "cancelp": S.setup.editPerson = null; render(); break;
+    case "savep": savePerson(); break;
+    case "addClient": { const c = el.dataset.co; const name = $("#nc-"+c).value.trim(); const code = ($("#ncc-"+c).value.trim()||name.slice(0,4)).toUpperCase().replace(/[^A-Z0-9]/g,""); if (!name){ toast("Add the client name."); return; }
+      await saveStructure(s=>{ const x = s.companies.find(q=>q.id===c); x.clients = x.clients||[]; x.clients.push({id:slug(name), name, code, clientSharing:false, teams:[]}); }); break; }
+    case "addTeam": { const {co:c, cl:k} = el.dataset; const row = el.parentElement; if (row.querySelector(".tminp")) return;
+      row.insertAdjacentHTML("beforeend", `<input class="inp tminp" placeholder="Team name" style="width:130px"><button class="btn sm pri" data-act="addTeamGo" data-co="${h(c)}" data-cl="${h(k)}">Add</button>`); row.querySelector(".tminp").focus(); break; }
+    case "addTeamGo": { const {co:c, cl:k} = el.dataset; const name = el.parentElement.querySelector(".tminp").value.trim(); if (!name) return;
+      await saveStructure(s=>{ const x = s.companies.find(q=>q.id===c).clients.find(q=>q.id===k); x.teams = x.teams||[]; x.teams.push({id:slug(name), name, code:name.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,5)}); }); break; }
+    case "addType": { const t = $("#nt").value.trim(); if (!t) return; await saveStructure(s=>{ if(!s.types.includes(t)) s.types.push(t); }); break; }
+    case "delType": { const t = el.dataset.t; await saveStructure(s=>{ s.types = s.types.filter(x=>x!==t); }); break; }
+  }
+});
+document.addEventListener("keydown", ev => {
+  if (P){ if (["ArrowRight","PageDown"," "].includes(ev.key)){ ev.preventDefault(); stepSlide(1); } else if (["ArrowLeft","PageUp"].includes(ev.key)){ ev.preventDefault(); stepSlide(-1); } else if (ev.key==="Escape" && !document.fullscreenElement) closePresent(); else if (ev.key==="Home"){ P.i=0; renderSlide(); } else if (ev.key==="End"){ P.i=P.slides.length-1; renderSlide(); } return; }
+  if (ev.key==="Escape" && D) closeDrawer();
+  if (ev.key==="Enter" && ev.target.matches(".row[data-act=open]")) openDrawer(ev.target.dataset.id);
+});
+let qT;
+document.addEventListener("input", ev => {
+  const t = ev.target;
+  if (t.id==="fq"){ clearTimeout(qT); qT = setTimeout(()=>{ S.filters.q = t.value; const pos = t.selectionStart; render(); const n = $("#fq"); if(n){ n.focus(); n.setSelectionRange(pos,pos);} }, 250); }
+  if (t.id==="w-to"){ S.wk.to = t.value; S.wk.toTouched = true; }
+  if (t.id==="w-cc"){ S.wk.cc = t.value; }
+  if (t.id==="w-subj"){ S.wk.subject = t.value; S.wk.subjTouched = true; }
+});
+document.addEventListener("change", ev => {
+  const t = ev.target;
+  const fmap = {fstatus:"status", fprio:"priority", ftype:"type", fperson:"person"};
+  if (fmap[t.id]){ S.filters[fmap[t.id]] = t.value; render(); return; }
+  if (t.id==="mobsel"){ const v = t.value; if (v.startsWith("c:")){ const [,c,k,m] = v.split(":"); go({kind:"container", co:c, cl:k, tm:m}); } else go({kind:v}); return; }
+  if (t.id==="acc-role"){ const v = t.value; $("#acc-help").textContent = ROLE_HELP[v]; $("#acc-scopes-wrap").hidden = !["editor","contributor"].includes(v); return; }
+  if (t.id==="w-scope"){ S.wk.scope = t.value; S.wk.toTouched = S.wk.subjTouched = false; render(); return; }
+  if (t.id==="w-end"){ S.wk.weekEnd = t.value || today(); S.wk.subjTouched = false; render(); return; }
+  if (!D) return;
+  if (t.dataset.pick){ const r = t.dataset.pick, id = t.value; if (!id) return; if (id==="__new"){ t.value=""; quickAddPerson(r); return; } readForm(); if (r==="accountable") D.accountable = id; else D[r] = [...(D[r]||[]), id]; $("#pk-"+r).outerHTML = pickerHTML(r, D[r]); return; }
+  if (t.id==="f-co"){ readForm(); D.companyId = t.value; D.clientId = ""; D.teamId = ""; renderDrawer(); return; }
+  if (t.id==="f-cl"){ readForm(); D.clientId = t.value; D.teamId = ""; renderDrawer(); return; }
+  if (t.id==="f-tm"){ D.teamId = t.value; return; }
+  if (t.id==="f-status"){ const closing = CLOSED.includes(t.value) && !(D._orig && CLOSED.includes(D._orig.status)); $("#closureWrap").hidden = !closing; if (closing) $("#f-closure").focus(); return; }
+  if (t.id==="f-type" && D.isNew){ const f = TYPE_FREQ[t.value]; if (f && $("#f-freq").value==="none"){ readForm(); D.type = t.value; D.recur = {freq:f, next:D.nbd||today(), lead:1}; renderDrawer(); } return; }
+  if (t.id==="f-freq"){ const on = t.value!=="none"; $("#nextWrap").hidden = !on; $("#leadWrap").hidden = !on; if (on && !$("#f-next").value) $("#f-next").value = $("#f-nbd").value || today(); return; }
+  if (t.id==="f-due"){ readForm(); renderDrawer(); return; }
+});
+
+/* ---------- boot ---------- */
+async function boot(){
+  try { S.me = await window.trackerApi("/api/auth/me"); } catch(e){ if (e && e.status===401) return; S.err = "The tracker could not load. Reload to try again."; S.structureLoaded = S.actionsLoaded = true; render(); return; }
+  S.db = window.trackerDb; S.meId = S.me.personId; S.role = S.me.role;
+  document.body.classList.toggle("client", S.role==="client");
+  S.canWrite = S.role!=="client"; S.canAdmin = S.role==="admin"; S.canCreate = S.role==="admin" || S.role==="editor";
+  S.mail = !!S.me.mailEnabled; S.mailOK = S.mail && S.canCreate;
+  const db = S.db;
+  const fail = e => { if (e && e.code==="revoked") return; S.err = "The tracker could not load (" + (e && e.message || "error") + "). Reload to try again."; render(); };
+  db.doc("org/structure").onSnapshot(snap=>{ S.structure = snap.exists ? snap.data() : {companies:[], types:["Ad-hoc meeting","Deliverable"]}; S.structureLoaded = true; if (S.role==="client") S.clientName = allCompanies().flatMap(c=>c.clients||[]).find(k=>k.id===S.me.clientId)?.name || ""; dataRender(); }, fail);
+  db.collection("people").onSnapshot(snap=>{ S.people = snap.docs.map(d=>({id:d.id, ...d.data()})); dataRender(); }, fail);
+  db.collection("actions").onSnapshot(snap=>{ S.actions = snap.docs.map(d=>({id:d.id, ...d.data()})); const first = !S.actionsLoaded; S.actionsLoaded = true; dataRender(); if (first) openFromHash(); }, fail);
+  if (S.role!=="client") db.collection("updates").orderBy("at","desc").limit(40).onSnapshot(snap=>{ S.updates = snap.docs.map(d=>d.data()); if (S.view.kind==="weekly") dataRender(); }, ()=>{});
+  if (S.canAdmin){ db.doc("org/settings").onSnapshot(snap=>{ S.settings = snap.exists ? snap.data() : {}; if (S.view.kind==="setup") dataRender(); }, ()=>{}); loadUsers(); }
+}
+/* Re-render on data changes, but never while someone is typing in a form on the page */
+function dataRender(){
+  const a = document.activeElement;
+  if (a && a.closest && a.closest("#main") && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type!=="search"){ S.pendingRender = true; return; }
+  render();
+}
+document.addEventListener("focusout", ()=> setTimeout(()=>{ if (S.pendingRender){ const a = document.activeElement; if (!(a && a.closest && a.closest("#main") && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))){ S.pendingRender = false; render(); } } }, 50));
+function openFromHash(){
+  const m = location.hash.match(/^#item-([A-Za-z0-9_\-.~:@+]+)$/);
+  if (m && S.actions.some(a=>a.id===m[1])) openDrawer(m[1]);
+  if (m) history.replaceState(null, "", location.pathname);
+}
+window.addEventListener("hashchange", ()=>{ if (S.actionsLoaded) openFromHash(); });
+async function loadUsers(){ try { const r = await window.trackerApi("/api/admin/users"); S.users = r.users; if (S.view.kind==="setup") dataRender(); } catch(_){} }
+render();
+boot();
+})();
+</script>
+
+</body>
+</html>
