@@ -31,6 +31,7 @@ The service_role key stays on the server (Vercel environment variables). Browser
    - `ADMIN_PASSWORD`: your first sign-in password (10+ characters; change it after signing in)
    - `CRON_SECRET`: any random string of 16+ characters
    - `SESSION_SECRET`: another random string of 16+ characters
+   - Optional: `LOG_LEVEL`, `SLOW_REQUEST_MS`, `EVENT_RETENTION_DAYS` (see Monitoring and logs)
    - `SEED_ON_FIRST_START=false` only if you ran `02_seed.sql` and don't want the app to ever load its built-in copy (it never overwrites existing data either way)
 4. **Deploy**, open the `https://<project>.vercel.app` link and sign in with `amit.shirke@zipstacc.com` and `ADMIN_PASSWORD`. If the page says tables are missing, run `01_schema.sql` (step 2) and reload.
 5. **Optional: your own domain.** Settings → **Domains**, e.g. `axion.peopleocity.in`. Add the DNS record Vercel shows you, set `APP_URL=https://axion.peopleocity.in`, and redeploy.
@@ -89,6 +90,22 @@ node --env-file=.env.local server.js        # http://localhost:3000
 ```
 
 On a long-running host the reminders run from a built-in timer, so no cron is needed.
+
+## Monitoring and logs
+
+**System status** (left menu, admins only) shows:
+- Health checks: Supabase reachable and how fast, the monitoring table, email (press **Test email** to check the SMTP login), Microsoft sign-in, `CRON_SECRET`, `SESSION_SECRET`.
+- Last run of the weekday reminders and the Monday summary, and whether each is switched on.
+- Counts for the last 24 hours: server errors, browser errors, slow requests. Plus people signed in this week and logins never used.
+- History tabs: **Activity** (sign-ins, failed sign-ins, password changes, invites, access changes, every action created, edited or deleted with the fields that changed, update-trail posts, weekly update emails), **Errors** (server and browser, with the stack), **Slow requests**, **Scheduled jobs**. A red badge on the menu item shows server errors in the last 24 hours.
+
+Everything there is stored in the `events` table in Supabase, kept for 180 days (`EVENT_RETENTION_DAYS`) and pruned by the daily cron. You can query it in the Supabase **Table Editor** or SQL Editor, e.g. `select * from events where kind = 'error' order by at desc limit 50;`. Upgrading from an earlier version: run `supabase/01_schema.sql` again to add the table (it doesn't touch your data).
+
+**Request references.** Every response carries an `X-Request-Id` header. When something fails, the message the person sees ends with *(Reference 3f9c…)*. Search for that reference in **Vercel → your project → Logs** or on the System status Errors tab to find the exact request and stack.
+
+**Vercel logs.** The server writes one JSON line per event (`ts`, `level`, `msg`, `reqId`, `method`, `path`, `status`, `ms`, `user`, `role`). In Vercel → Logs, filter by level or search `"level":"error"`. Successful requests are only logged with `LOG_LEVEL=debug`; errors, 4xx, slow requests, sign-ins and edits are always logged. To keep logs longer than Vercel's retention, add a **Log Drain** (Vercel → Settings → Log Drains, Pro plan) to Better Stack, Datadog, Axiom or similar; the JSON fields arrive ready to search.
+
+**Uptime monitoring.** `GET /api/health` returns `200 {"ok":true,"dbMs":…}` when the app can reach Supabase and `503` when it can't. Point a free monitor (UptimeRobot, Better Stack) at `https://<your-domain>/api/health` every 5 minutes with an email alert. This also keeps a free-tier Supabase project from pausing.
 
 ## Backups
 

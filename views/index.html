@@ -170,6 +170,18 @@ textarea.inp{width:100%;resize:vertical}
 .fld>span em{font-style:normal;color:var(--faint);font-weight:400}
 .fld .inp{width:100%}
 .hint{font-size:12.5px;color:var(--faint)}
+.stgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;padding:4px 22px 16px}
+.stc{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
+.stc .lb{font-size:14px;font-weight:500;min-width:150px}
+.stc .chip{white-space:normal}
+.evl{padding:0 8px 10px}
+.evr{display:grid;grid-template-columns:120px 1fr auto;gap:12px;align-items:baseline;padding:10px 14px;border-top:1px solid var(--line);font-size:14px}
+.evr.err .when{color:var(--red)}
+.evr .when{color:var(--faint);font-size:12.5px;font-variant-numeric:tabular-nums}
+.evr .what{min-width:0;overflow-wrap:anywhere}
+.evr .ref{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--faint)}
+.evr pre{white-space:pre-wrap;font-size:11.5px;background:var(--sunk);padding:8px 10px;border-radius:8px;margin:6px 0 0;max-height:240px;overflow:auto}
+@media (max-width:640px){ .evr{grid-template-columns:1fr} .evr .ref{display:none} .stc .lb{min-width:0;width:100%} }
 .arci{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
 .picker{background:var(--fill);border-radius:var(--r-sm);padding:6px;display:flex;flex-wrap:wrap;gap:5px;align-items:center;min-height:40px}
 .picker select{border:0;background:transparent;flex:1 1 120px;min-width:0;padding:4px;color:var(--primary);cursor:pointer;outline:none}
@@ -337,6 +349,22 @@ body.client .ic{display:none}
 <div id="toastHost"></div>
 <div id="presentHost"></div>
 
+<script>
+/* Report browser errors to the server (System status page). At most 5 per page load, no repeats. */
+(function(){
+  var seen = {}, n = 0;
+  function report(msg, stack){
+    msg = String(msg || "Unknown error").slice(0, 500);
+    if (seen[msg] || n >= 5 || /ResizeObserver loop|Script error\.?$/.test(msg)) return;
+    seen[msg] = 1; n++;
+    try { fetch("/api/client-error", { method: "POST", headers: { "content-type": "application/json", "x-tracker": "1" }, credentials: "same-origin", keepalive: true,
+      body: JSON.stringify({ message: msg, stack: String(stack || "").slice(0, 3000), url: location.pathname + location.hash }) }).catch(function(){}); } catch (_) {}
+  }
+  window.addEventListener("error", function(e){ report(e.message, e.error && e.error.stack); });
+  window.addEventListener("unhandledrejection", function(e){ var r = e.reason || {}; if (r.code === "revoked") return; report("Unhandled: " + (r.message || r), r.stack); });
+  window.reportClientError = report;
+})();
+</script>
 <script src="/shim.js"></script>
 <script>
 (() => {
@@ -503,7 +531,8 @@ function renderNav(){
   let html = `<div class="brand"><b>AXION</b><span>${internal?"PeopleOCity · Expenova · UKB IT":"Shared action items"}</span></div>
   <a data-act="nav" data-v="overview" class="${vk==="overview"?"on":""}">${internal?"Overall view":"Overview"} ${badge(S.actions)}</a>
   ${internal?`<a data-act="nav" data-v="weekly" class="${vk==="weekly"?"on":""}">Weekly updates</a>
-  <a data-act="nav" data-v="setup" class="${vk==="setup"?"on":""}">People &amp; setup</a>`:""}`;
+  <a data-act="nav" data-v="setup" class="${vk==="setup"?"on":""}">People &amp; setup</a>`:""}
+  ${S.role==="admin"?`<a data-act="nav" data-v="status" class="${vk==="status"?"on":""}">System status ${S.statusAlert?`<span class="n"><span class="badge red" title="Errors in the last 24 hours">${S.statusAlert}</span></span>`:""}</a>`:""}`;
   html += `<div class="grp"><div class="lbl">Companies</div>`;
   for (const c of companies()){
     const ca = S.actions.filter(a=>a.companyId===c.id);
@@ -524,7 +553,7 @@ function renderNav(){
 }
 function mobNav(){
   const vk = viewKey(S.view);
-  let o = S.role!=="client" ? `<option value="overview">Overall view</option><option value="weekly">Weekly updates</option><option value="setup">People &amp; setup</option>` : `<option value="overview">Overview</option>`;
+  let o = S.role!=="client" ? `<option value="overview">Overall view</option><option value="weekly">Weekly updates</option><option value="setup">People &amp; setup</option>${S.role==="admin"?`<option value="status">System status</option>`:""}` : `<option value="overview">Overview</option>`;
   for (const c of companies()){
     o += `<optgroup label="${h(c.name)}"><option value="c:${h(c.id)}::">${h(c.name)} — all</option>`;
     for (const k of c.clients||[]){ o += `<option value="c:${h(c.id)}:${h(k.id)}:">${h(k.name)}</option>`; for (const t of k.teams||[]) o += `<option value="c:${h(c.id)}:${h(k.id)}:${h(t.id)}">&nbsp;&nbsp;${h(k.name)} · ${h(t.name)}</option>`; }
@@ -541,9 +570,11 @@ function render(){
   if (!S.structureLoaded || !S.actionsLoaded){ return; }
   const ro = S.role==="client" ? `<div class="banner" style="background:var(--blue-bg);color:var(--blue)">These are the action items shared with ${h(S.clientName||"your team")}. Open any item to see its progress and post a comment.</div>` : "";
   if (S.role==="client" && (S.view.kind==="weekly" || S.view.kind==="setup")) S.view = {kind:"overview"};
+  if (S.view.kind==="status" && S.role!=="admin") S.view = {kind:"overview"};
   const k = S.view.kind;
-  m.innerHTML = mobNav() + ro + (k==="overview" ? viewOverview() : k==="container" ? viewContainer() : k==="weekly" ? viewWeekly() : viewSetup());
+  m.innerHTML = mobNav() + ro + (k==="overview" ? viewOverview() : k==="container" ? viewContainer() : k==="weekly" ? viewWeekly() : k==="status" ? viewStatus() : viewSetup());
   if (k==="weekly") hydrateWeekly();
+  if (k==="status") loadStatus(false);
 }
 
 function scopeAttrs(sc){ return sc && sc.co ? `data-co="${h(sc.co)}" data-cl="${h(sc.cl||"")}" data-tm="${h(sc.tm||"")}"` : `data-co="" data-cl="" data-tm=""`; }
@@ -1274,6 +1305,67 @@ async function invite(send){
     if (r.emailed) toast("Invite emailed");
   } catch(e){ toast(e.message || "Couldn't create the invite"); }
 }
+/* ---------- system status (admins) ---------- */
+const EV_LABEL = {
+  "signin":"Signed in", "signin.failed":"Sign-in failed", "signout":"Signed out", "password.changed":"Changed password", "password.reset":"Reset password",
+  "password.reset_requested":"Asked for a password reset", "invite.accepted":"Accepted invite", "invite.created":"Invite created", "access.set":"Login access changed",
+  "access.removed":"Login removed", "doc.create":"Created", "doc.update":"Edited", "doc.delete":"Deleted", "comment.add":"Posted on", "mail.weekly_update":"Sent weekly update",
+  "job.run_now":"Ran job now", "seed.loaded":"Loaded starting data",
+};
+const STATUS_TABS = [["audit","Activity"],["error,client_error","Errors"],["slow","Slow requests"],["cron","Scheduled jobs"]];
+function ago(ms){ const s = Math.max(0, Math.round((Date.now()-ms)/1000)); if (s<60) return s+"s ago"; if (s<3600) return Math.round(s/60)+" min ago"; if (s<86400) return Math.round(s/3600)+" h ago"; return Math.round(s/86400)+" d ago"; }
+function stamp(ms){ const d = new Date(ms); return d.toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit",hour12:false}); }
+function viewStatus(){
+  const st = S.status, tab = S.statusTab || "audit";
+  const pill = (c, label) => { if (!c) return ""; const cls = c.ok ? "green" : c.skipped ? "" : "red"; const txt = c.ok ? (c.ms!=null?`OK · ${c.ms} ms`:"OK") : c.skipped ? c.skipped : (c.error||"Failing");
+    return `<div class="stc"><span class="lb">${label}</span><span class="chip ${cls}">${h(txt)}</span></div>`; };
+  const tile = (v,k,cls) => `<div class="kpi ${v?cls:""}"><span class="v">${v==null?"—":v}</span><span class="k">${k}</span></div>`;
+  const job = (j, on, label) => `<div class="stc"><span class="lb">${label}</span><span class="chip ${on?"blue":""}">${on?"Switched on":"Switched off"}</span>${j?`<span class="chip ${j.level==="error"?"red":j.message==="ran"?"green":""}">Last ${h(j.message)} · ${ago(j.at)}</span>`:`<span class="hint">No run recorded yet</span>`}</div>`;
+  const body = !st ? `<div class="empty"><b>Checking…</b>Contacting the database and collecting recent activity.</div>` : st.error ? `<div class="banner">${h(st.error)}</div>` : `
+    ${st.usage?`<div class="kpis">${tile(st.usage.errors24h,"Server errors · 24h","red")}${tile(st.usage.clientErrors24h,"Browser errors · 24h","amber")}${tile(st.usage.slow24h,"Slow requests · 24h","amber")}${tile(st.usage.activeLast7d,"People signed in · 7d","")}${tile(st.usage.neverSignedIn,"Logins never used","")}${tile(st.usage.actionsOpen,"Open actions","")}</div>`:""}
+    <section class="panel"><header><h2>Health</h2><span class="sub">Version ${h(st.version)}${st.region?" · region "+h(st.region):""} · ${h(st.env)} · checked ${ago(S.statusAt)}</span></header>
+      <div class="stgrid">${pill(st.checks.database,"Supabase database")}${pill(st.checks.eventsTable,"Monitoring table")}${pill(st.checks.email,"Email (SMTP)")}${pill(st.checks.microsoft,"Microsoft sign-in")}${pill(st.checks.cronSecret,"Scheduled jobs key")}${pill(st.checks.sessionSecret,"Session secret")}</div>
+      <div class="settings" style="padding-top:0">${job(st.jobs.lastRequests, st.jobs.requestsEnabled, "Weekday reminders")}${job(st.jobs.lastDigest, st.jobs.digestEnabled, "Monday summary")}
+      ${st.checks.eventsTable && !st.checks.eventsTable.ok ? `<span class="hint">The monitoring table is missing: run <b>supabase/01_schema.sql</b> again in the Supabase SQL Editor. The app keeps working; it just can't keep a history.</span>`:""}</div></section>
+    <section class="panel"><header><h2>History</h2><div class="seg">${STATUS_TABS.map(([k,l])=>`<button class="${tab===k?"on":""}" data-act="statusTab" data-k="${k}">${l}</button>`).join("")}</div></header>
+      <div id="st-events">${eventsHTML(S.statusEvents, tab)}</div></section>`;
+  return `<div class="head"><div><div class="crumb">Admins only</div><h1>System status</h1></div>
+    <div class="actions">${S.mail?`<button class="btn" data-act="statusRefresh" data-smtp="1">Test email</button>`:""}<button class="btn" data-act="statusRefresh">Refresh</button></div></div>${body}`;
+}
+function eventsHTML(list, tab){
+  if (!list) return `<div class="empty"><b>Loading…</b></div>`;
+  if (!list.length) return `<div class="empty"><b>${tab==="audit"?"No activity recorded yet":tab==="slow"?"No slow requests":tab==="cron"?"No scheduled runs yet":"No errors"}</b>${tab.startsWith("error")?"Nice. Server and browser errors will appear here with a reference you can match against the Vercel logs.":"Entries are kept for 180 days."}</div>`;
+  return `<div class="evl">${list.map(e=>{
+    const who = e.personId ? pname(e.personId) : "";
+    let what = "";
+    if (e.kind==="audit"){ const d = e.data||{}; what = `${who?`<b>${h(who)}</b> `:e.message.startsWith("signin")?"":"<b>System</b> "}${h(EV_LABEL[e.message]||e.message)}${d.label?` <span class="chip">${h(d.label)}</span>`:""}${d.target?` · ${h(pname(d.target))}`:""}${d.role?` · ${h(d.role)}`:""}${d.reason?` · ${h(d.reason)}`:""}${d.email&&e.message==="signin.failed"?` · ${h(d.email)}`:""}${d.method&&e.message==="signin"?` · ${h(d.method)}`:""}${d.changed&&d.changed.length?`<div class="hint">${h(d.changed.join(", "))}</div>`:""}`; }
+    else if (e.kind==="cron") what = `<b>${h(e.path||"job")}</b> ${h(e.message||"")}${e.data&&e.data.sent?` · ${Array.isArray(e.data.sent)?e.data.sent.length:h(e.data.sent)} emailed`:""}${e.data&&e.data.ms!=null?` · ${e.data.ms} ms`:""}`;
+    else if (e.kind==="slow") what = `<b>${h(e.path||"")}</b> took ${h(e.message||"")}${who?` · ${h(who)}`:""}`;
+    else what = `<span class="chip ${e.kind==="error"?"red":"amber"}">${e.kind==="error"?"Server":"Browser"}</span> <b>${h(e.message||"")}</b><div class="hint">${h(e.path||"")}${who?" · "+h(who):""}</div>${e.data&&e.data.stack?`<details><summary class="hint">Details</summary><pre>${h(e.data.stack)}</pre></details>`:""}`;
+    return `<div class="evr ${e.level==="error"?"err":""}"><span class="when" title="${h(new Date(e.at).toISOString())}">${stamp(e.at)}</span><div class="what">${what}</div>${e.requestId?`<span class="ref" title="Request reference: search for it in Vercel → Logs">${h(e.requestId)}</span>`:""}</div>`;
+  }).join("")}</div>`;
+}
+async function loadStatus(force, smtp){
+  if (S.statusLoading) return;
+  const fresh = S.statusAt && Date.now() - S.statusAt < 30000;
+  if (fresh && !force){ return; }
+  S.statusLoading = true;
+  try {
+    const tab = S.statusTab || "audit";
+    const [st, ev] = await Promise.all([window.trackerApi("/api/admin/status" + (smtp?"?smtp=1":"")), window.trackerApi("/api/admin/events?limit=100&kinds=" + encodeURIComponent(tab)).catch(()=>({events:[]}))]);
+    S.status = st; S.statusEvents = ev.events; S.statusAt = Date.now();
+    S.statusAlert = (st.usage && st.usage.errors24h) || 0;
+    if (smtp) toast(st.checks.email.ok ? "The mail server accepted the login" : "Email check failed: " + (st.checks.email.error||""));
+  } catch(e){ S.status = {error: e.message || "Couldn't load the status"}; S.statusAt = Date.now(); }
+  S.statusLoading = false;
+  if (S.view.kind==="status") render(); else if (S.structureLoaded && S.actionsLoaded) renderNav();
+}
+async function loadStatusTab(tab){
+  S.statusTab = tab; S.statusEvents = null; render();
+  try { S.statusEvents = (await window.trackerApi("/api/admin/events?limit=100&kinds=" + encodeURIComponent(tab))).events; } catch(e){ S.statusEvents = []; toast(e.message||"Couldn't load"); }
+  if (S.view.kind==="status") render();
+}
+
 function settingsPanel(){
   const st = S.settings || {};
   return `<section class="panel"><header><h2>Sign-in &amp; automatic emails</h2></header><div class="settings">
@@ -1330,6 +1422,8 @@ document.addEventListener("click", async ev => {
       if (viewKey(target)!==viewKey(S.view)) go(target);
       S.filters = {...S.filters, q:"", priority:"", type:"", person:"", flag: fl==="open" ? "" : fl, status: fl==="closedLast" ? "all" : "open"};
       render(); window.scrollTo(0,0); break; }
+    case "statusRefresh": loadStatus(true, el.dataset.smtp==="1"); break;
+    case "statusTab": loadStatusTab(el.dataset.k); break;
     case "new": openDrawer(null); break;
     case "open": openDrawer(el.dataset.id); break;
     case "close": closeDrawer(); break;
@@ -1418,6 +1512,7 @@ async function boot(){
   document.body.classList.toggle("client", S.role==="client");
   S.canWrite = S.role!=="client"; S.canAdmin = S.role==="admin"; S.canCreate = S.role==="admin" || S.role==="editor";
   S.mail = !!S.me.mailEnabled; S.mailOK = S.mail && S.canCreate;
+  if (S.canAdmin) setTimeout(()=>loadStatus(true), 2500); // fills the error badge on "System status"
   const db = S.db;
   const fail = e => { if (e && e.code==="revoked") return; S.err = "The tracker could not load (" + (e && e.message || "error") + "). Reload to try again."; render(); };
   db.doc("org/structure").onSnapshot(snap=>{ S.structure = snap.exists ? snap.data() : {companies:[], types:["Ad-hoc meeting","Deliverable"]}; S.structureLoaded = true; if (S.role==="client") S.clientName = allCompanies().flatMap(c=>c.clients||[]).find(k=>k.id===S.me.clientId)?.name || ""; dataRender(); }, fail);

@@ -59,6 +59,22 @@ CREATE TABLE IF NOT EXISTS public.counters (k TEXT PRIMARY KEY, v BIGINT NOT NUL
 -- Failed sign-in attempts, for the 10-tries-per-15-minutes limit
 CREATE TABLE IF NOT EXISTS public.login_fails (k TEXT PRIMARY KEY, n INTEGER NOT NULL, t BIGINT NOT NULL);
 
+-- Observability: audit trail (who did what), server and browser errors, slow requests, scheduled-job runs.
+-- Kept for EVENT_RETENTION_DAYS (default 180) and pruned by the daily job.
+CREATE TABLE IF NOT EXISTS public.events (
+  id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  at          BIGINT NOT NULL,                 -- epoch milliseconds
+  kind        TEXT   NOT NULL,                 -- audit | error | client_error | slow | cron
+  level       TEXT   NOT NULL DEFAULT 'info',  -- info | warn | error
+  person_id   TEXT,
+  request_id  TEXT,                            -- matches the X-Request-Id header and the Vercel log line
+  path        TEXT,
+  message     TEXT,
+  data        JSONB
+);
+CREATE INDEX IF NOT EXISTS events_at ON public.events (at DESC);
+CREATE INDEX IF NOT EXISTS events_kind_at ON public.events (kind, at DESC);
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Functions the server calls through the API (supabase.rpc) for writes that must be atomic
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -161,6 +177,7 @@ ALTER TABLE public.tokens      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.meta        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.counters    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.login_fails ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.events      ENABLE ROW LEVEL SECURITY;
 DO $$
 DECLARE r TEXT;
 BEGIN
@@ -169,13 +186,13 @@ BEGIN
     public.axion_record_fail(TEXT, BIGINT), public.axion_upsert_user(TEXT, TEXT, TEXT, JSONB, BOOLEAN, BOOLEAN), public.axion_bootstrap(JSONB, JSONB, TEXT, TEXT) FROM PUBLIC;
   FOREACH r IN ARRAY ARRAY['anon','authenticated'] LOOP
     IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN
-      EXECUTE format('REVOKE ALL ON public.docs, public.users, public.sessions, public.tokens, public.meta, public.counters, public.login_fails FROM %I', r);
+      EXECUTE format('REVOKE ALL ON public.docs, public.users, public.sessions, public.tokens, public.meta, public.counters, public.login_fails, public.events FROM %I', r);
       EXECUTE format('REVOKE ALL ON FUNCTION public.axion_put_doc(TEXT, TEXT, TEXT, JSONB), public.axion_delete_doc(TEXT), public.axion_claim_meta(TEXT, TEXT), public.axion_record_fail(TEXT, BIGINT), public.axion_upsert_user(TEXT, TEXT, TEXT, JSONB, BOOLEAN, BOOLEAN), public.axion_bootstrap(JSONB, JSONB, TEXT, TEXT) FROM %I', r);
     END IF;
   END LOOP;
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
     GRANT USAGE ON SCHEMA public TO service_role;
-    GRANT SELECT, INSERT, UPDATE, DELETE ON public.docs, public.users, public.sessions, public.tokens, public.meta, public.counters, public.login_fails TO service_role;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON public.docs, public.users, public.sessions, public.tokens, public.meta, public.counters, public.login_fails, public.events TO service_role;
     GRANT EXECUTE ON FUNCTION public.axion_put_doc(TEXT, TEXT, TEXT, JSONB), public.axion_delete_doc(TEXT), public.axion_claim_meta(TEXT, TEXT),
       public.axion_record_fail(TEXT, BIGINT), public.axion_upsert_user(TEXT, TEXT, TEXT, JSONB, BOOLEAN, BOOLEAN), public.axion_bootstrap(JSONB, JSONB, TEXT, TEXT) TO service_role;
   END IF;
