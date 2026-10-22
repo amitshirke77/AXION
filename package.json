@@ -2,16 +2,20 @@
   "name": "axion",
   "version": "1.0.0",
   "private": true,
-  "description": "AXION — group action tracker for PeopleOCity, Expenova and UKB IT Solutions",
+  "description": "AXION \u2014 group action tracker for PeopleOCity, Expenova and UKB IT Solutions",
   "main": "server.js",
-  "engines": { "node": "22.x" },
-  "scripts": { "start": "node server.js" },
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
+    "@supabase/supabase-js": "2.45.4",
     "bcryptjs": "2.4.3",
     "cookie-parser": "1.4.7",
     "express": "4.21.2",
     "jose": "5.9.6",
-    "nodemailer": "6.9.16",
-    "pg": "8.13.1"
+    "nodemailer": "6.9.16"
   }
 }

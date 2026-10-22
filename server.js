@@ -37,36 +37,28 @@ app.use((req, res, next) => {
 
 // ---------- first request on each instance: schema, seed, admin ----------
 let ready = null;
+// Tables and functions come from supabase/01_schema.sql (run once in the Supabase SQL Editor).
+// Data: run supabase/02_seed.sql too, or leave SEED_ON_FIRST_START unset and the app loads seed/seed.json
+// into an empty tracker on its first request.
 async function bootstrap() {
-  await store.withLock("axion-bootstrap", async (c) => {
-    await store.migrate(c);
-    const has = await c.query("SELECT 1 FROM docs WHERE coll='org' LIMIT 1");
-    const seedFile = path.join(__dirname, "seed", "seed.json");
-    if (!has.rowCount && fs.existsSync(seedFile)) {
-      const seed = JSON.parse(fs.readFileSync(seedFile, "utf8"));
-      for (const [p, d] of Object.entries(seed.docs || {})) await store.putDoc(p, d, c);
-      console.log(`[seed] loaded ${Object.keys(seed.docs || {}).length} documents`);
-    }
-    const st = await c.query("SELECT 1 FROM docs WHERE path='org/settings'");
-    if (!st.rowCount) await store.putDoc("org/settings", { requestsEnabled: false, digestEnabled: false, hideDueFor: ["exp"] }, c);
-    const adminEmail = (process.env.ADMIN_EMAIL || "amit.shirke@zipstacc.com").toLowerCase();
-    const admins = await c.query("SELECT 1 FROM users WHERE role='admin' LIMIT 1");
-    if (!admins.rowCount) {
-      const pr = await c.query("SELECT id FROM docs WHERE coll='people' AND lower(data->>'email')=$1 LIMIT 1", [adminEmail]);
-      let pid = pr.rowCount ? pr.rows[0].id : null;
-      if (!pid) { pid = "admin"; await store.putDoc("people/admin", { name: process.env.ADMIN_NAME || "Admin", email: adminEmail, role: "Leadership", side: "internal", companyId: "", clientId: "", teamId: "", active: true }, c); }
-      await store.upsertUser({ personId: pid, email: adminEmail, role: "admin", scopes: ["*"], loginEnabled: true, msAllowed: true }, c);
-      console.log(`[bootstrap] admin login created for ${adminEmail}`);
-    }
-    if (process.env.ADMIN_PASSWORD) {
-      const r = await c.query("SELECT person_id FROM users WHERE lower(email)=$1 AND password_hash IS NULL", [adminEmail]);
-      if (r.rowCount) { await c.query("UPDATE users SET password_hash=$2 WHERE person_id=$1", [r.rows[0].person_id, bcrypt.hashSync(process.env.ADMIN_PASSWORD, 12)]); console.log("[bootstrap] admin password set from ADMIN_PASSWORD"); }
-    }
-  });
+  await store.checkSchema();
+  const seedFile = path.join(__dirname, "seed", "seed.json");
+  const seedOn = process.env.SEED_ON_FIRST_START !== "false";
+  const empty = !(await store.getDoc("org/structure"));
+  const docs = seedOn && empty && fs.existsSync(seedFile) ? JSON.parse(fs.readFileSync(seedFile, "utf8")).docs : null;
+  const adminEmail = (process.env.ADMIN_EMAIL || "amit.shirke@zipstacc.com").toLowerCase();
+  const r = await store.bootstrap({ docs, settings: { requestsEnabled: false, digestEnabled: false, hideDueFor: ["exp"] }, adminEmail, adminName: process.env.ADMIN_NAME || "Admin" });
+  if (r && r.seeded) console.log(`[seed] loaded ${r.seeded} documents`);
+  if (r && r.adminCreated) console.log(`[bootstrap] admin login created for ${adminEmail}`);
+  if (process.env.ADMIN_PASSWORD && (await store.setPasswordIfEmpty(adminEmail, bcrypt.hashSync(process.env.ADMIN_PASSWORD, 12)))) console.log("[bootstrap] admin password set from ADMIN_PASSWORD");
 }
 app.use((req, res, next) => {
+  if (req.path === "/healthz") return next();
   if (!ready) ready = bootstrap().catch((e) => { ready = null; throw e; });
-  ready.then(() => next(), (e) => { console.error("[bootstrap]", e); res.status(503).send("The tracker's database isn't reachable. Check DATABASE_URL and try again."); });
+  ready.then(() => next(), (e) => {
+    console.error("[bootstrap]", e.message);
+    res.status(503).type("text").send(/Tables are missing|rejected the key|isn't configured/.test(e.message) ? e.message : "The tracker can't reach Supabase right now. Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY, then reload.");
+  });
 });
 
 // ---------- helpers ----------

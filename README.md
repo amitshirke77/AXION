@@ -10,23 +10,34 @@ Action tracking for PeopleOCity, Expenova and UKB IT Solutions: a container per 
 |---|---|
 | Pages and API | One Vercel Function (`api/index.js` → `server.js`, Express) |
 | Static files | `public/` (Vercel CDN) |
-| Data, logins, sessions | Postgres, via the **Neon** integration (free tier is enough) |
+| Data, logins, sessions | **Supabase**, reached through the Supabase API (`supabase-js`) with `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, server side only |
 | Weekday reminders, Monday summary | Vercel Cron → `/api/cron/requests` and `/api/cron/digest` |
 
-## Deploy (about 15 minutes)
+## Set up Supabase (about 10 minutes)
+
+1. supabase.com → **New project**. Region **South Asia (Mumbai)**.
+2. **SQL Editor → New query**: paste all of `supabase/01_schema.sql` → **Run**. This creates the tables and the functions AXION calls through the API, and blocks the public anon key from all of it. Safe to run again.
+3. Optional — **SQL Editor → New query**: paste all of `supabase/02_seed.sql` → **Run** to load your 76 actions, 111 update-trail entries, 22 people, structure, settings and admin login. If you skip this, AXION loads the same data itself on its first request.
+4. **Project Settings → API**: copy the **Project URL** (`SUPABASE_URL`) and the **service_role** secret key (`SUPABASE_SERVICE_ROLE_KEY`). Projects that use the new keys can use the **secret** key (`sb_secret_…`) instead.
+
+The service_role key stays on the server (Vercel environment variables). Browsers only ever talk to AXION's own API, so the anon key isn't used. AXION has its own logins, so Supabase Auth isn't used either.
+
+## Deploy on Vercel (about 10 minutes)
 
 1. **Put the code on GitHub.** Create a **private** repository and upload this folder, or push it with git.
-2. **Import into Vercel.** vercel.com → **Add New → Project** → pick the repository → Framework preset **Other** → leave build settings as they are → **Deploy**. The first deploy will show a database error page; that's expected until step 3.
-3. **Add the database.** Project → **Storage → Create Database → Neon (Postgres)** → region **Singapore (ap-southeast-1)** → connect it to the project. This adds `DATABASE_URL` for you.
-4. **Add environment variables.** Project → **Settings → Environment Variables** (Production):
+2. **Import into Vercel.** vercel.com → **Add New → Project** → pick the repository → Framework preset **Other** → leave build settings as they are.
+3. **Environment variables** (before pressing Deploy, or under Settings → Environment Variables), matching `.env.example`:
+   - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from step 4 above. If you link the project with Vercel's **Supabase integration**, these two are added for you.
    - `ADMIN_PASSWORD`: your first sign-in password (10+ characters; change it after signing in)
    - `CRON_SECRET`: any random string of 16+ characters
    - `SESSION_SECRET`: another random string of 16+ characters
-   - `ADMIN_EMAIL`: `amit.shirke@zipstacc.com` (this is the default if you leave it out)
-5. **Redeploy.** Deployments → ⋯ → **Redeploy**. Open the `https://<project>.vercel.app` link and sign in with `amit.shirke@zipstacc.com` and `ADMIN_PASSWORD`. The first page load takes a few seconds while your data is loaded.
-6. **Optional: your own domain.** Settings → **Domains**, e.g. `axion.peopleocity.in`. Add the DNS record Vercel shows you, set `APP_URL=https://axion.peopleocity.in`, and redeploy.
+   - `SEED_ON_FIRST_START=false` only if you ran `02_seed.sql` and don't want the app to ever load its built-in copy (it never overwrites existing data either way)
+4. **Deploy**, open the `https://<project>.vercel.app` link and sign in with `amit.shirke@zipstacc.com` and `ADMIN_PASSWORD`. If the page says tables are missing, run `01_schema.sql` (step 2) and reload.
+5. **Optional: your own domain.** Settings → **Domains**, e.g. `axion.peopleocity.in`. Add the DNS record Vercel shows you, set `APP_URL=https://axion.peopleocity.in`, and redeploy.
 
-Costs: Vercel **Hobby** is free but is meant for non-commercial use; for company use Vercel asks for **Pro** (US$20/month per member, and only you need a seat). Neon's free tier covers this app's size.
+The app runs in Vercel's Mumbai region (`bom1`, set in `vercel.json`) next to the Supabase project.
+
+Costs: Supabase free tier pauses a project after a week with no activity; Supabase Pro (US$25/month) doesn't. Vercel **Hobby** is free but meant for non-commercial use; for company use Vercel asks for **Pro** (US$20/month per member, and only you need a seat).
 
 ## Give people access
 
@@ -73,7 +84,7 @@ Timing: Vercel Cron runs the reminders at 04:15 UTC on weekdays (09:45 IST) and 
 
 ```
 npm ci
-cp .env.example .env.local   # fill in DATABASE_URL (any Postgres 14+) and ADMIN_PASSWORD
+cp .env.example .env.local   # fill in SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and ADMIN_PASSWORD
 node --env-file=.env.local server.js        # http://localhost:3000
 ```
 
@@ -81,4 +92,4 @@ On a long-running host the reminders run from a built-in timer, so no cron is ne
 
 ## Backups
 
-Neon keeps point-in-time history (24 hours on the free tier, longer on paid plans). For an extra copy: `pg_dump "$DATABASE_URL" > axion-backup.sql`.
+Supabase takes daily backups on paid plans (Database → Backups). On any plan you can keep your own copy with `pg_dump` using the connection string from **Connect → Session pooler** (port 5432): `pg_dump "<connection string>" > axion-backup.sql`.
