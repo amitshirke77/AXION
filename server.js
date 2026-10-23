@@ -255,15 +255,29 @@ async function write(u, path_, op, data, req) {
   const ctx = await ctxFor(u, segs, next || (old && old.data));
   if (segs[0] === "actions" && segs.length === 2) {
     if (old) ctx.children = await store.listChildren(segs[1]);
-    if ((next && next.parentId) || (old && old.data.parentId)) { ctx.people = {}; for (const d of await store.listColl("people")) ctx.people[d.id] = d.data; }
+    const clientSide = u.role === "client" || (old && old.data.createdByClient);
+    if ((next && next.parentId) || (old && old.data.parentId) || clientSide) { ctx.people = {}; for (const d of await store.listColl("people")) ctx.people[d.id] = d.data; }
+    if (u.role === "client" && next) {
+      const all = (await store.listColl("actions")).map((d) => d.data);
+      ctx.refs = access.clientRefs(u, all);
+      const st = await store.getDoc("org/structure");
+      const comp = ((st && st.data.companies) || []).find((c) => (c.clients || []).some((k) => k.id === u.clientId));
+      const k = comp && comp.clients.find((x) => x.id === u.clientId);
+      ctx.clientCompany = comp ? comp.id : null;
+      if (!old && k) { // next free reference for this client, counted across every item (including ones the client can't see)
+        const pre = (k.code || comp.code || "ACT") + "-";
+        let max = 0; for (const a of all) if (a.ref && a.ref.startsWith(pre)) { const n = parseInt(a.ref.slice(pre.length), 10); if (n > max) max = n; }
+        ctx.newRef = pre + String(max + 1).padStart(3, "0");
+      }
+    }
   }
   const out = access.checkWrite(u, segs, old ? old.data : null, next, op === "delete" ? "delete" : old ? "set" : "create", ctx);
-  const label = (out || (old && old.data) || {}).ref || (out || (old && old.data) || {}).name || null;
+  const label = (out && out.privateToClient) || (old && old.data.privateToClient) ? null : (out || (old && old.data) || {}).ref || (out || (old && old.data) || {}).name || null; // private client items stay out of the admin activity log details
   if (op === "delete") { await store.deleteDoc(p); await obs.audit(req, "doc.delete", { path: p, label }); return { id: segs[segs.length - 1], deleted: true }; }
   const saved = await store.putDoc(p, out);
   const changed = old ? Object.keys({ ...old.data, ...out }).filter((k) => JSON.stringify(old.data[k] ?? null) !== JSON.stringify(out[k] ?? null)).slice(0, 30) : null;
   if (!(segs[0] === "actions" && segs.length === 4)) await obs.audit(req, old ? "doc.update" : "doc.create", { path: p, label, changed });
-  else await obs.audit(req, "comment.add", { path: p, label: (ctx.parent || {}).ref || null, kind: out.kind });
+  else await obs.audit(req, "comment.add", { path: p, label: ctx.parent && !ctx.parent.privateToClient ? ctx.parent.ref || null : null, kind: out.kind });
   if (segs[0] === "people" && segs.length === 2 && old && out.email !== old.data.email) {
     const usr = await store.getUser(segs[1]);
     if (usr && out.email) { try { await store.upsertUser({ ...usr, email: out.email }); } catch (_) { throw err(400, "Another login already uses that email."); } }

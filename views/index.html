@@ -192,6 +192,28 @@ body.compact .row.sub::before{top:6px}
 .fld>span em{font-style:normal;color:var(--faint);font-weight:400}
 .fld .inp{width:100%}
 .hint{font-size:12.5px;color:var(--faint)}
+/* ---------- help ---------- */
+.hlay{display:grid;grid-template-columns:240px minmax(0,1fr);gap:18px;align-items:start}
+.htoc{position:sticky;top:20px;display:flex;flex-direction:column;padding:12px;gap:1px;max-height:calc(100vh - 40px);overflow:auto}
+.htoc .inp{margin-bottom:8px}
+.htoc a{padding:7px 10px;border-radius:8px;font-size:14px;cursor:pointer;color:var(--ink)}
+.htoc a:hover{background:var(--fill)}
+.hmain{display:flex;flex-direction:column;gap:14px;min-width:0}
+.hsec{scroll-margin-top:16px;transition:box-shadow .3s}
+.hsec.flash{box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 45%,transparent)}
+.hbody{padding:0 22px 18px;font-size:14.5px;line-height:1.6;color:var(--ink)}
+.hbody p{margin:0 0 10px}
+.hbody h4{margin:14px 0 6px;font-size:14px;font-weight:600}
+.hbody ul,.hbody ol{margin:0 0 10px;padding-left:22px}
+.hbody li{margin:3px 0}
+.hbody a{color:var(--primary);cursor:pointer}
+.hbody code{font-family:var(--f-mono);font-size:12.5px;background:var(--fill);padding:1px 5px;border-radius:5px}
+.htbl{border-collapse:collapse;width:100%;margin:4px 0 12px}
+.htbl td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:top}
+.htbl td:first-child{width:30%;white-space:nowrap}
+.hfaq dt{font-weight:600;margin-top:10px}
+.hfaq dd{margin:2px 0 0;color:var(--muted)}
+@media (max-width:860px){ .hlay{grid-template-columns:1fr} .htoc{position:static;max-height:none;flex-direction:row;flex-wrap:wrap;gap:4px} .htoc .inp{flex-basis:100%} .htoc a{background:var(--fill);border-radius:999px;padding:5px 12px;font-size:13px} .htbl td:first-child{white-space:normal;width:38%} .hbody{padding:0 16px 16px} }
 /* ---------- compact density (Overall view + client/company views) ---------- */
 .dens{align-self:center}
 .dens button{padding:5px 12px}
@@ -426,6 +448,7 @@ body.client .ic{display:none}
 })();
 </script>
 <script src="/shim.js"></script>
+<script src="/help.js"></script>
 <script>
 (() => {
 "use strict";
@@ -505,7 +528,8 @@ const kidsOf = a => a && !a.parentId ? S.actions.filter(x=>x.parentId===a.id) : 
 const isTaskOwner = a => S.role!=="client" && !!a && a.accountable===S.meId;
 // Sub-tasks go to internal people of the main task's company, or group-wide people
 const sameOrgP = (p, coId) => !!p && p.active!==false && p.side!=="client" && (!p.companyId || p.companyId===coId);
-const canEditA = a => S.role==="admin" || (S.role==="editor" && scopeAllows(a.companyId, a.clientId, a.teamId)) || (!!a.parentId && isTaskOwner(masterOf(a)));
+const isClientOwn = a => S.role==="client" && !!a && !!a.createdByClient && a.createdBy===S.meId;
+const canEditA = a => isClientOwn(a) || S.role==="admin" || (S.role==="editor" && scopeAllows(a.companyId, a.clientId, a.teamId)) || (!!a.parentId && isTaskOwner(masterOf(a)));
 const canAddSub = m => !!m && !m.parentId && !CLOSED.includes(m.status) && S.role!=="client" && (S.role==="admin" || (S.role==="editor" && scopeAllows(m.companyId, m.clientId, m.teamId)) || isTaskOwner(m));
 function subRef(m){ let max = 0; for (const a of S.actions) if (a.ref && a.ref.startsWith(m.ref+".")){ const n = parseInt(a.ref.slice(m.ref.length+1),10); if (n>max) max = n; } return `${m.ref}.${max+1}`; }
 /* Put sub-tasks directly under their main task when both are in the list */
@@ -571,7 +595,8 @@ function stats(list){
   const t = today(), wkAgo = addDays(t,-7);
   const lw = weekBounds("last");
   const s = {open:0, overdue:0, p12:0, due7:0, upd:0, rem:0, closed7:0, closedLast:0, total:list.length};
-  for (const a of list){ const d = derive(a);
+  for (const a of list){ if (a.parentId) continue; // counts are main tasks only; sub-task progress shows on the main task
+    const d = derive(a);
     if (d.open){ s.open++; if(d.overdue) s.overdue++; if(a.priority==="P1"||a.priority==="P2") s.p12++; if(d.due7) s.due7++; if(d.updDue) s.upd++; if(d.remDue) s.rem++; }
     else if (a.status==="Done" && a.closedAt){ const cd = closedDay(a); if (cd >= wkAgo) s.closed7++; if (cd>=lw.start && cd<=lw.end) s.closedLast++; }
   }
@@ -579,7 +604,7 @@ function stats(list){
 }
 function rag(list){
   const s = stats(list);
-  const p1Late = list.some(a => { const d = derive(a); return d.overdue && a.priority==="P1"; });
+  const p1Late = list.some(a => { if (a.parentId) return false; const d = derive(a); return d.overdue && a.priority==="P1"; });
   if (p1Late || (s.open && s.overdue/s.open > .2)) return "r";
   if (s.overdue || s.upd) return "a";
   return "g";
@@ -609,6 +634,7 @@ function renderNav(){
   <a data-act="nav" data-v="overview" class="${vk==="overview"?"on":""}">${internal?"Overall view":"Overview"} ${badge(S.actions)}</a>
   ${internal?`<a data-act="nav" data-v="weekly" class="${vk==="weekly"?"on":""}">Weekly updates</a>
   <a data-act="nav" data-v="setup" class="${vk==="setup"?"on":""}">People &amp; setup</a>`:""}
+  <a data-act="nav" data-v="help" class="${vk==="help"?"on":""}">Help</a>
   ${S.role==="admin"?`<a data-act="nav" data-v="status" class="${vk==="status"?"on":""}">System status ${S.statusAlert?`<span class="n"><span class="badge red" title="Errors in the last 24 hours">${S.statusAlert}</span></span>`:""}</a>`:""}`;
   html += `<div class="grp"><div class="lbl">Companies</div>`;
   for (const c of companies()){
@@ -630,7 +656,7 @@ function renderNav(){
 }
 function mobNav(){
   const vk = viewKey(S.view);
-  let o = S.role!=="client" ? `<option value="overview">Overall view</option><option value="weekly">Weekly updates</option><option value="setup">People &amp; setup</option>${S.role==="admin"?`<option value="status">System status</option>`:""}` : `<option value="overview">Overview</option>`;
+  let o = S.role!=="client" ? `<option value="overview">Overall view</option><option value="weekly">Weekly updates</option><option value="setup">People &amp; setup</option>${S.role==="admin"?`<option value="status">System status</option>`:""}<option value="help">Help</option>` : `<option value="overview">Overview</option><option value="help">Help</option>`;
   for (const c of companies()){
     o += `<optgroup label="${h(c.name)}"><option value="c:${h(c.id)}::">${h(c.name)} — all</option>`;
     for (const k of c.clients||[]){ o += `<option value="c:${h(c.id)}:${h(k.id)}:">${h(k.name)}</option>`; for (const t of k.teams||[]) o += `<option value="c:${h(c.id)}:${h(k.id)}:${h(t.id)}">&nbsp;&nbsp;${h(k.name)} · ${h(t.name)}</option>`; }
@@ -645,11 +671,11 @@ function render(){
   const m = $("#main");
   if (S.err){ m.innerHTML = mobNav() + `<div class="banner">${h(S.err)}</div>`; return; }
   if (!S.structureLoaded || !S.actionsLoaded){ return; }
-  const ro = S.role==="client" ? `<div class="banner" style="background:var(--blue-bg);color:var(--blue)">These are the action items shared with ${h(S.clientName||"your team")}. Open any item to see its progress and post a comment.</div>` : "";
+  const ro = S.role==="client" ? `<div class="banner" style="background:var(--blue-bg);color:var(--blue)">Action items shared with ${h(S.clientName||"your team")}, plus your own. Press <b>New action</b> to track your own work: it stays private to you until you assign someone from the team.</div>` : "";
   if (S.role==="client" && (S.view.kind==="weekly" || S.view.kind==="setup")) S.view = {kind:"overview"};
   if (S.view.kind==="status" && S.role!=="admin") S.view = {kind:"overview"};
   const k = S.view.kind;
-  m.innerHTML = mobNav() + ro + (k==="overview" ? viewOverview() : k==="container" ? viewContainer() : k==="weekly" ? viewWeekly() : k==="status" ? viewStatus() : viewSetup());
+  m.innerHTML = mobNav() + ro + (k==="overview" ? viewOverview() : k==="container" ? viewContainer() : k==="weekly" ? viewWeekly() : k==="status" ? viewStatus() : k==="help" ? viewHelp() : viewSetup());
   if (k==="weekly") hydrateWeekly();
   if (k==="status") loadStatus(false);
 }
@@ -681,7 +707,7 @@ function viewOverview(){
   }
   const attention = sortActions(S.actions.filter(a=>{ const d = derive(a); return d.overdue || d.updDue || d.remDue || d.nbdSlip || (d.open && a.priority==="P1"); })).slice(0,25);
   return `<div class="head"><div><div class="crumb">${S.role==="admin"?"All three companies":h(S.me?.name||"")} · ${fmt(today())}</div><h1>${S.role==="client"?h(S.clientName||"Overview"):"Overall view"}</h1></div>
-    <div class="actions">${densityToggle()}<button class="btn" data-act="present">Present</button>${S.role!=="client"?`<button class="btn" data-act="nav" data-v="weekly">Prepare weekly update</button>`:""}${S.canCreate?`<button class="btn pri" data-act="new">New action</button>`:""}</div></div>
+    <div class="actions">${densityToggle()}<button class="btn" data-act="present">Present</button>${S.role!=="client"?`<button class="btn" data-act="nav" data-v="weekly">Prepare weekly update</button>`:""}${S.canCreate||S.role==="client"?`<button class="btn pri" data-act="new">New action</button>`:""}</div></div>
   ${kpiStrip(s,false)}
   <section class="panel"><header><h2>By company, client and team</h2><span class="sub">Health: red = a P1 is late or over 20% of open items are late · amber = anything late or an update pending</span></header>
     <div class="tblwrap"><table class="sum"><thead><tr><th>Container</th><th>Open</th><th class="ic">Late</th><th>P1/P2</th><th class="ic">Due 7d</th><th class="ic">Updates pending</th><th class="ic">Reminders</th><th>Closed last wk</th></tr></thead><tbody>${rows}</tbody></table></div></section>
@@ -700,7 +726,9 @@ function rowHTML(a, compact){
   else if (d.recurring && d.open) flags.push(`<span class="chip">Repeats ${h(freqLabel(a.recur.freq).toLowerCase())}</span>`);
   if (d.open && a.closeRequested) flags.push(`<span class="chip green">Closure requested</span>`);
   if (d.open && a.blockedNote && a.status==="Blocked") flags.push(`<span class="chip red">Blocked</span>`);
-  if (a.sharedWithClient) flags.push(`<span class="chip blue">Client-visible</span>`);
+  if (S.role==="client" && a.privateToClient) flags.push(`<span class="chip">🔒 Private</span>`);
+  else if (a.createdByClient) flags.push(`<span class="chip blue">${S.role==="client"?"Raised by "+h(a.createdBy===S.meId?"you":pname(a.createdBy)):"Raised by client"}</span>`);
+  else if (a.sharedWithClient && S.role!=="client") flags.push(`<span class="chip blue">Client-visible</span>`);
   const kids = kidsOf(a);
   if (kids.length){ const dn = kids.filter(k=>CLOSED.includes(k.status)).length; flags.push(`<span class="chip ${dn===kids.length?"green":""}">Sub-tasks ${dn}/${kids.length}</span>`); }
   if (a.parentId) flags.push(`<span class="chip" title="Sub-task of ${h(a.parentTitle||"")}">↳ ${h(a.parentRef||"Main task")}</span>`);
@@ -718,7 +746,7 @@ function rowHTML(a, compact){
 
 function closedPanel(list, showContainer){
   const which = S.closedRange, b = weekBounds(which);
-  const items = closedBetween(list, b); S.closedItems = items; S.closedShowC = showContainer;
+  const items = closedBetween(list.filter(a=>!a.parentId), b); S.closedItems = items; S.closedShowC = showContainer;
   const done = items.filter(a=>a.status==="Done").length, canc = items.length - done;
   const row = a => `<div class="row closedrow" data-act="open" data-id="${h(a.id)}" tabindex="0"><span class="cobar" style="background:${coColor(a.companyId)}"></span><div class="ref c-ref">${h(a.ref)}</div>
     <div class="c-t"><div class="t">${h(a.title)}</div><div class="nba"><b>${a.status==="Done"?"Outcome":"Cancelled"}</b> ${h(a.closureNote||"No closure note recorded")}</div><div class="meta">${a.status==="Done"?`<span class="chip green">Done</span>`:`<span class="chip">Cancelled</span>`}<span class="chip">${h(a.type||"Action")}</span>${showContainer?`<span class="chip">${h(containerLabel(a))}</span>`:""}${a.due && closedDay(a)>a.due?`<span class="chip amber">Closed ${diffDays(closedDay(a),a.due)}d after due</span>`:a.due?`<span class="chip green">On time</span>`:""}</div></div>
@@ -749,6 +777,7 @@ function viewContainer(){
     if (f.priority && a.priority!==f.priority) return false;
     if (f.type && a.type!==f.type) return false;
     if (f.person && !([a.accountable,...(a.responsible||[]),...(a.consulted||[]),...(a.informed||[])].includes(f.person))) return false;
+    if (f.flag && a.parentId) return false; // dashboard numbers count main tasks only
     if (f.flag==="overdue" && !d.overdue) return false;
     if (f.flag==="p12" && !(d.open && (a.priority==="P1"||a.priority==="P2"))) return false;
     if (f.flag==="due7" && !d.due7) return false;
@@ -764,7 +793,7 @@ function viewContainer(){
   const flagNames = {overdue:"Past due date",p12:"Open P1 / P2",due7:"Due in 7 days",upd:"Updates pending",rem:"Reminders due",closedLast:"Closed last week"};
   const teamsNote = k && k.teams && k.teams.length && !t ? `<span class="sub">Includes ${k.teams.map(x=>h(x.name)).join(" and ")} teams</span>` : "";
   return `<div class="head"><div><div class="crumb">${c?`<span class="dot" style="display:inline-block;background:${coColor(c.id)};margin-right:6px"></span>`:`<a data-act="nav" data-v="overview" style="cursor:pointer;text-decoration:underline">Overall view</a> · `}${h(crumb)}</div><h1>${h(title)}</h1></div>
-    <div class="actions">${k && k.clientSharing ? `<span class="chip blue" style="align-self:center">Client receives weekly updates</span>`:""}${densityToggle()}<button class="btn" data-act="present">Present</button>${S.role!=="client"?`<button class="btn" data-act="weeklyHere">Weekly update for this</button>`:""}${S.canCreate?`<button class="btn pri" data-act="new">New action</button>`:""}</div></div>
+    <div class="actions">${k && k.clientSharing ? `<span class="chip blue" style="align-self:center">Client receives weekly updates</span>`:""}${densityToggle()}<button class="btn" data-act="present">Present</button>${S.role!=="client"?`<button class="btn" data-act="weeklyHere">Weekly update for this</button>`:""}${S.canCreate||S.role==="client"?`<button class="btn pri" data-act="new">New action</button>`:""}</div></div>
   ${kpiStrip(stats(scoped), true)}
   <section class="panel">
     <div class="filters">
@@ -787,6 +816,11 @@ let D = null; // draft
 function blankDraft(){
   const v = S.view.kind==="container" ? S.view : {};
   const t = today();
+  if (S.role==="client"){
+    const coId = allCompanies().find(c=>(c.clients||[]).some(k=>k.id===S.me.clientId))?.id || "";
+    return {isNew:true, createdByClient:true, companyId:coId, clientId:S.me.clientId||"", teamId:"", title:"", description:"", type:"Client request", priority:"P3", status:"Not started",
+      due:addDays(t,14), nba:"", nbd:addDays(t,3), accountable:S.meId, responsible:[S.meId], consulted:[], informed:[], sharedWithClient:true, recur:{freq:"none", next:"", lead:1}, updateEvery:0};
+  }
   return {isNew:true, companyId:v.co||companies()[0]?.id||"", clientId: v.cl && v.cl!=="_co" ? v.cl : "", teamId:v.tm||"",
     title:"", description:"", type:types()[0]||"Deliverable", priority:"P3", status:"Not started", due:addDays(t,7), nba:"", nbd:addDays(t,3),
     accountable:S.people.find(p=>p.isOwnerPerson)?.id||"", responsible:[], consulted:[], informed:[],
@@ -834,8 +868,10 @@ function containerSelects(){
 }
 function renderDrawer(){
   if (!D) return;
-  D._full = D.isNew ? S.canCreate : canEditA(D._orig||D);
-  D._lite = D.isNew ? S.canCreate : canUpdA(D._orig||D);
+  const newOK = S.canCreate || S.role==="client";
+  D._full = D.isNew ? newOK : canEditA(D._orig||D);
+  D._lite = D.isNew ? newOK : canUpdA(D._orig||D);
+  const cl_ = S.role==="client", own = cl_ && (D.isNew || isClientOwn(D._orig||D));
   const dis = D._full ? "" : "disabled";
   const disL = D._lite ? "" : "disabled";
   const d = D.isNew ? {open:true} : derive(D);
@@ -847,6 +883,12 @@ function renderDrawer(){
   const hdr = D.isNew ? `<div><div class="crumb">New action</div><h2>Log an action item</h2></div>`
     : `<div><div class="crumb"><span class="mono">${h(D.ref)}</span> · ${h(containerLabel(D))}</div><h2>${h(D.title)}</h2>${D.parentId?`<div class="crumb" style="margin-top:4px">Sub-task of ${masterOf(D)?`<a class="lnk" data-act="open" data-id="${h(D.parentId)}">${h(D.parentRef||"")} · ${h(D.parentTitle||"")}</a>`:`${h(D.parentRef||"")} · ${h(D.parentTitle||"")}`}</div>`:""}</div>`;
   const alerts = [];
+  if (cl_ && own){
+    const priv = !(D.isNew ? false : !(D._orig||D).privateToClient);
+    alerts.push(priv ? `<div class="callout">🔒 <b>Private to you.</b> Only you${D.isNew?"":" and anyone from your organisation you name on it"} can see this item. Assign someone from the team as Accountable or Responsible and it's shared with them.</div>`
+      : `<div class="callout" style="background:var(--blue-bg);color:var(--blue);box-shadow:none">Shared with the team: ${h([D.accountable,...(D.responsible||[])].filter((x,i,a)=>x&&a.indexOf(x)===i).map(pname).join(", "))} can see and work on this.</div>`);
+  }
+  if (!D.isNew && !cl_ && D.createdByClient) alerts.push(`<div class="callout" style="background:var(--blue-bg);color:var(--blue);box-shadow:none">Raised by ${h(pname(D.createdBy))} (client). They see this item and every update marked visible to client. Keep at least one team member on it.</div>`);
   if (!D.isNew){
     if (d.overdue) alerts.push(`<div class="callout red">Past its due date by ${diffDays(today(),D.due)} days. Update the next best action and date, or revise the due date with a reason in the trail.</div>`);
     if (D.closeRequested && d.open) alerts.push(`<div class="callout" style="background:var(--green-bg);color:var(--green);box-shadow:none">${h(pname(D.closeRequested.by))} asked to close this on ${fmt(D.closeRequested.at)}: “${h(D.closeRequested.note||"")}”. ${D._orig.accountable===S.meId||D._full?"Set the status to Done to close it, or post a comment if more is needed.":"The Accountable person will confirm."}</div>`);
@@ -862,10 +904,10 @@ function renderDrawer(){
       ${alerts.join("")}
       <div class="sect"><h3>What and where</h3>
         <label class="fld"><span>Action item</span><input class="inp" id="f-title" value="${h(D.title)}" placeholder="e.g. Share revised SLA dashboard with client" ${dis}></label>
-        <label class="fld" ${S.role==="client"?"hidden":""}><span>Context <em>(optional)</em></span><textarea class="inp" id="f-desc" rows="2" ${dis}>${h(D.description)}</textarea></label>
-        <div class="grid2" id="cont">${containerSelects()}</div>
+        <label class="fld" ${cl_&&!own?"hidden":""}><span>Context <em>(optional)</em></span><textarea class="inp" id="f-desc" rows="2" ${dis}>${h(D.description)}</textarea></label>
+        ${cl_ ? "" : `<div class="grid2" id="cont">${containerSelects()}</div>`}
         <div class="grid2">
-          <label class="fld"><span>Type</span><select class="inp" id="f-type" ${dis}>${types().map(x=>opt(x,x,D.type)).join("")}</select></label>
+          <label class="fld" ${cl_?"hidden":""}><span>Type</span><select class="inp" id="f-type" ${dis}>${[...new Set([...types(), D.type].filter(Boolean))].map(x=>opt(x,x,D.type)).join("")}</select></label>
           <label class="fld"><span>Priority</span><select class="inp" id="f-prio" ${dis}>${PRIORITIES.map(p=>opt(p.k,p.label,D.priority)).join("")}</select></label>
           <label class="fld"><span>Status</span><select class="inp" id="f-status" ${disL}>${STATUSES.map(s=>opt(s,s,D.status)).join("")}</select></label>
         </div>
@@ -875,7 +917,7 @@ function renderDrawer(){
         <label class="fld"><span>NBA — next best action</span><input class="inp" id="f-nba" value="${h(D.nba)}" placeholder="The single next step that moves this forward" ${disL}></label>
         <div class="grid2">
           <label class="fld"><span>NBD — next best date</span><input type="date" class="inp" id="f-nbd" value="${h(D.nbd)}" ${disL}></label>
-          ${S.role==="client"&&noDue(D)?"":`<label class="fld"><span>Final due date</span><input type="date" class="inp" id="f-due" value="${h(D.due)}" ${dis}></label>`}
+          ${cl_&&noDue(D)&&!own?"":`<label class="fld"><span>Final due date</span><input type="date" class="inp" id="f-due" value="${h(D.due)}" ${dis}></label>`}
           ${S.role==="client"?"":`<label class="fld"><span>Progress updates</span><select class="inp" id="f-cad" ${dis}>${cadOpts.map(([v,l])=>opt(v,l,D.updateEvery||0)).join("")}</select></label>`}
         </div>
         <div class="hint" id="longHint" ${S.role==="client"?"hidden":""}>${long?`Long-deadline item (over ${LONG_DAYS} days): the responsible person must post a progress update at least ${D.updateEvery===3?"every 3 days":D.updateEvery===14?"every 14 days":"weekly"} until it is closed.`:`Due within ${LONG_DAYS} days, so periodic updates are optional.`}</div>
@@ -884,11 +926,11 @@ function renderDrawer(){
         <div class="arci">
           <div class="fld"><span><span class="letter">A</span>Accountable — owns the outcome (one person)</span>${pickerHTML("accountable", D.accountable)}</div>
           <div class="fld"><span><span class="letter">R</span>Responsible — does the work, posts updates</span>${pickerHTML("responsible", D.responsible)}</div>
-          <div class="fld"><span><span class="letter">C</span>Consulted — input before decisions</span>${pickerHTML("consulted", D.consulted)}</div>
-          <div class="fld"><span><span class="letter">I</span>Informed — receives the weekly update</span>${pickerHTML("informed", D.informed)}</div>
+          <div class="fld" ${cl_?"hidden":""}><span><span class="letter">C</span>Consulted — input before decisions</span>${pickerHTML("consulted", D.consulted)}</div>
+          <div class="fld" ${cl_?"hidden":""}><span><span class="letter">I</span>Informed — receives the weekly update</span>${pickerHTML("informed", D.informed)}</div>
         </div>
       </div>
-      <div class="sect"><h3>Repeat reminders</h3>
+      <div class="sect" ${cl_&&!own?"hidden":""}><h3>Repeat reminders</h3>
         <div class="grid2">
           <label class="fld"><span>Repeats</span><select class="inp" id="f-freq" ${dis}>${FREQS.map(([v,l])=>opt(v,l,D.recur.freq)).join("")}</select></label>
           <label class="fld" ${D.recur.freq==="none"?"hidden":""} id="nextWrap"><span>Next occurrence</span><input type="date" class="inp" id="f-next" value="${h(D.recur.next)}" ${dis}></label>
@@ -897,7 +939,7 @@ function renderDrawer(){
         <div class="hint">Ongoing items stay open; each completed cycle is logged in the trail and the next date rolls forward.</div>
       </div>
       ${!D.isNew && !D.parentId && S.role!=="client" ? subtasksHTML() : ""}
-      ${share && !D.parentId ? `<div class="sect"><h3>Client sharing</h3><label class="chk"><input type="checkbox" id="f-share" ${D.sharedWithClient?"checked":""} ${dis}> Include this item in client-facing weekly updates for ${h(cl(D.companyId,D.clientId).name)}</label><div class="hint">Only updates you mark “visible to client” are quoted in the client email.</div></div>` : ""}
+      ${share && !D.parentId && !D.createdByClient ? `<div class="sect"><h3>Client sharing</h3><label class="chk"><input type="checkbox" id="f-share" ${D.sharedWithClient?"checked":""} ${dis}> Include this item in client-facing weekly updates for ${h(cl(D.companyId,D.clientId).name)}</label><div class="hint">Only updates you mark “visible to client” are quoted in the client email.</div></div>` : ""}
       ${D.isNew ? "" : `<div class="sect"><h3>${S.role==="client"?"Updates and comments":"Update trail"}</h3>${composeHTML()}<div class="trail" id="trail"><div class="hint">Loading trail…</div></div></div>`}
     </div>
     <div class="dfoot">${D._lite?`<button class="btn pri" data-act="save">${D.isNew?"Create action":"Save changes"}</button>`:""}
@@ -1104,7 +1146,7 @@ const noDue = a => NO_DUE_COMPANIES.includes(a.companyId);
 function buildReport(){
   const w = S.wk; const sc = parseScope(w.scope); const end = w.weekEnd || today(); const start = addDays(end,-6);
   const client = w.audience==="client";
-  let acts = S.actions.filter(a=>inScope(a,sc));
+  let acts = S.actions.filter(a=>inScope(a,sc) && !a.parentId);
   if (client) acts = acts.filter(a=>a.sharedWithClient);
   const t = today();
   const closed = acts.filter(a=>a.status==="Done" && a.closedAt && closedDay(a)>=start && closedDay(a)<=end).sort((x,y)=>y.closedAt.localeCompare(x.closedAt));
@@ -1249,7 +1291,7 @@ function viewSetup(){
       <section class="panel"><header><h2>Companies, clients, teams</h2><span class="sub">${S.canAdmin?"Each client is its own container":"Editors can change structure"}</span></header><div class="tree">${tree}</div></section>
       <section class="panel"><header><h2>Action types</h2></header><div class="form"><div style="display:flex;flex-wrap:wrap;gap:6px">${types().map(t=>`<span class="pchip">${h(t)}${S.canAdmin?`<button data-act="delType" data-t="${h(t)}" aria-label="Remove ${h(t)}">×</button>`:""}</span>`).join("")}</div>
         ${S.canAdmin?`<div class="actions"><input class="inp" id="nt" placeholder="New type, e.g. Board review" style="flex:1"><button class="btn sm" data-act="addType">Add type</button></div>`:""}</div></section>
-      <section class="panel"><header><h2>How the tracker works</h2></header><div class="legend">
+      <section class="panel"><header><h2>How the tracker works</h2><a class="lnk" data-help="items">Full guide in Help ›</a></header><div class="legend">
         <div><b>A · R · C · I</b>Accountable owns the outcome (one person). Responsible does the work and posts updates. Consulted gives input. Informed receives the weekly update.</div>
         <div><b>NBA · NBD</b>Next best action: the single next step. Next best date: when that step should be done. Both are required on every open item.</div>
         <div><b>P1 – P4</b>P1 critical, daily follow-up. P2 this week. P3 within the month. P4 when capacity allows.</div>
@@ -1311,7 +1353,7 @@ function listSlides(kicker, title, items, mode, showC, accent, emptyMsg){
   return pages.map((pg,i)=>`<div class="s-kicker" style="color:${accent}">${kicker}</div><h2 class="s-h">${title}${pages.length>1?` <span class="s-pg">${i+1}/${pages.length}</span>`:""}</h2><ul class="s-list">${pg.map(a=>sItem(a,mode,showC)).join("")}</ul>`);
 }
 function buildSlides(sc){
-  const acts = S.actions.filter(a=>inScope(a,sc));
+  const acts = S.actions.filter(a=>inScope(a,sc) && !a.parentId);
   const s = stats(acts); const lw = weekBounds("last"); const T = scTitle(sc);
   const multi = !sc || !sc.co || !sc.cl || (sc.cl && !sc.tm && (cl(sc.co,sc.cl)?.teams||[]).length);
   const open = sortActions(acts.filter(a=>derive(a).open));
@@ -1439,6 +1481,33 @@ async function invite(send){
     if (r.emailed) toast("Invite emailed");
   } catch(e){ toast(e.message || "Couldn't create the invite"); }
 }
+/* ---------- help ---------- */
+function helpSections(){
+  const r = S.role, tags = r==="client" ? ["all","client"] : ["all","internal", ...(r==="admin"||r==="editor"?["edit"]:[]), ...(r==="admin"?["admin"]:[])];
+  return (window.AXION_HELP||[]).filter(x=>x.for.some(f=>tags.includes(f)));
+}
+function helpBody(){
+  const q = (S.helpQ||"").trim().toLowerCase();
+  const strip = x => x.replace(/<[^>]+>/g," ").replace(/&amp;/g,"&").replace(/\s+/g," ");
+  const secs = helpSections().filter(x=>!q || (x.t+" "+strip(x.b)).toLowerCase().includes(q));
+  if (!secs.length) return `<div class="panel"><div class="empty"><b>Nothing matches “${h(S.helpQ)}”</b>Try a shorter word, such as “close”, “reminder” or “sub-task”.</div></div>`;
+  return secs.map(x=>`<section class="panel hsec" id="help-${h(x.id)}"><header><h2>${h(x.t)}</h2></header><div class="hbody">${x.b}</div></section>`).join("");
+}
+function viewHelp(){
+  const secs = helpSections();
+  return `<div class="head"><div><div class="crumb">${h(ROLE_LABEL[S.role]||"")} guide</div><h1>Help</h1></div></div>
+    <div class="hlay">
+      <nav class="htoc panel" aria-label="Help topics"><input type="search" class="inp" id="hq" placeholder="Search help" value="${h(S.helpQ||"")}" aria-label="Search help">
+        ${secs.map(x=>`<a data-help="${h(x.id)}">${h(x.t)}</a>`).join("")}</nav>
+      <div class="hmain" id="helpBody">${helpBody()}</div>
+    </div>`;
+}
+function helpJump(id){
+  if (S.view.kind!=="help"){ S.view = {kind:"help"}; render(); }
+  if (S.helpQ){ S.helpQ = ""; const i = $("#hq"); if (i) i.value = ""; $("#helpBody").innerHTML = helpBody(); }
+  const el = document.getElementById("help-"+id); if (el){ el.scrollIntoView({behavior:"smooth", block:"start"}); el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"), 1200); }
+}
+
 /* ---------- system status (admins) ---------- */
 const EV_LABEL = {
   "signin":"Signed in", "signin.failed":"Sign-in failed", "signout":"Signed out", "password.changed":"Changed password", "password.reset":"Reset password",
@@ -1532,6 +1601,7 @@ function openAccount(){
         <label class="fld"><span>New password (at least 10 characters)</span><input class="inp" type="password" id="pw1" autocomplete="new-password" minlength="10" required></label>
         <label class="fld"><span>Repeat new password</span><input class="inp" type="password" id="pw2" autocomplete="new-password" minlength="10" required></label>
         <button class="btn pri" type="submit" style="align-self:flex-start">Save password</button></form></div>
+      <div class="sect"><h3>Help</h3><span class="hint">How to update items, close them, add sub-tasks, send the weekly update and more.</span><button class="btn" data-help="${S.role==="client"?"client-start":"start"}" style="align-self:flex-start">Open the help guide</button></div>
       <div class="sect"><h3>Session</h3><button class="btn danger" data-act="signout" style="align-self:flex-start">Sign out</button></div></div></aside>`;
   $("#pwf").onsubmit = async ev => {
     ev.preventDefault();
@@ -1544,6 +1614,7 @@ async function signOut(){ try { await window.trackerApi("/api/auth/logout", {});
 
 /* ---------- events ---------- */
 document.addEventListener("click", async ev => {
+  const hl = ev.target.closest("[data-help]"); if (hl){ ev.preventDefault(); closeDrawer(); helpJump(hl.dataset.help); return; }
   const el = ev.target.closest("[data-act]"); if (!el) return;
   const act = el.dataset.act;
   if (el.tagName === "INPUT" && act==="setSetting"){ try { await S.db.doc("org/settings").set({...(S.settings||{}), [el.dataset.k]: el.checked}); toast("Setting saved"); } catch(e){ toast(writeErr(e)); } return; }
@@ -1618,6 +1689,7 @@ let qT;
 document.addEventListener("input", ev => {
   const t = ev.target;
   if (t.id==="fq"){ clearTimeout(qT); qT = setTimeout(()=>{ S.filters.q = t.value; const pos = t.selectionStart; render(); const n = $("#fq"); if(n){ n.focus(); n.setSelectionRange(pos,pos);} }, 250); }
+  if (t.id==="hq"){ S.helpQ = t.value; const b = $("#helpBody"); if (b) b.innerHTML = helpBody(); }
   if (t.id==="w-to"){ S.wk.to = t.value; S.wk.toTouched = true; }
   if (t.id==="w-cc"){ S.wk.cc = t.value; }
   if (t.id==="w-subj"){ S.wk.subject = t.value; S.wk.subjTouched = true; }
@@ -1667,6 +1739,7 @@ function dataRender(){
 }
 document.addEventListener("focusout", ()=> setTimeout(()=>{ if (S.pendingRender){ const a = document.activeElement; if (!(a && a.closest && a.closest("#main") && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))){ S.pendingRender = false; render(); } } }, 50));
 function openFromHash(){
+  if (location.hash==="#help" || location.hash.startsWith("#help-")){ const id = location.hash.slice(6); go({kind:"help"}); if (id) setTimeout(()=>helpJump(id), 50); history.replaceState(null, "", location.pathname); return; }
   const m = location.hash.match(/^#item-([A-Za-z0-9_\-.~:@+]+)$/);
   if (m && S.actions.some(a=>a.id===m[1])) openDrawer(m[1]);
   if (m) history.replaceState(null, "", location.pathname);

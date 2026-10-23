@@ -51,9 +51,15 @@ People & setup → press **Edit** on a person → **Login access**:
 | Contributor | Ticked scope + any item they're on | Status, next step and dates, progress updates on items where they are A, R or C. Only the Accountable person can close; others send a closure request |
 | Client view | Items marked client-visible for their own client | Comments only. Internal notes, update cadence and (for Expenova) due dates are never sent to them |
 
-**Sub-tasks.** Open any action and use **Sub-tasks** to split it up. The task owner (its Accountable person), editors and admins can add them. Each sub-task is assigned to someone in the same company as the main task (or a group-wide person) and becomes their own item, with its own reference (`CUSTCAP-026.1`), status, dates, update trail and reminders. The task owner can edit or reassign their sub-tasks even with Contributor access. The main task can only be set to Done or Cancelled once every sub-task is Done or Cancelled, and a main task with sub-tasks can't be deleted until they are. Sub-tasks stay internal unless an editor shares them with the client.
+**Sub-tasks.** Open any action and use **Sub-tasks** to split it up. The task owner (its Accountable person), editors and admins can add them. Each sub-task is assigned to someone in the same company as the main task (or a group-wide person) and becomes their own item, with its own reference (`CUSTCAP-026.1`), status, dates, update trail and reminders. The task owner can edit or reassign their sub-tasks even with Contributor access. The main task can only be set to Done or Cancelled once every sub-task is Done or Cancelled, and a main task with sub-tasks can't be deleted until they are. Sub-tasks stay internal unless an editor shares them with the client. Dashboard numbers, the closed-last-week panel, the weekly update, present mode and the Monday summary count main tasks only; sub-task progress shows on the main task as "Sub-tasks 2/3".
+
+**Client-raised items.** Client logins can press **New action** to track their own work. Those items are private to the client (and colleagues they name) until they assign someone from your team as Accountable or Responsible; from then on that person and your team see them as usual, labelled *Raised by client*, and the client keeps seeing them. Private items are never shown to admins, never counted in your dashboards, never emailed about, and their references are left out of the activity log. A team member can't remove the last team person from a client-raised item.
 
 Then **Email invite** (needs email set up) or **Get invite link** and send it yourself. The link lets them set a password; it works for 7 days.
+
+## Help for users
+
+Everyone has a **Help** page in the left menu (and under Account). It shows only what applies to that person's access level: clients see a short guide to shared items; contributors, editors and admins get the full guide, with admin-only sections for admins. It has a search box, and `https://<your-domain>/#help` (or `#help-subtasks`, `#help-weekly`, …) opens it directly, which is handy in emails. The text lives in `public/help.js`.
 
 ## Microsoft sign-in (optional)
 
