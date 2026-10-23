@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <title>AXION</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
@@ -44,7 +45,11 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;font-weight:700
 .app{display:grid;grid-template-columns:272px minmax(0,1fr);min-height:100vh}
 /* sidebar */
 .nav{background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-right:1px solid var(--line);padding:22px 12px 28px max(12px, env(safe-area-inset-left,0px));position:sticky;top:0;height:100vh;overflow:auto}
-.brand{padding:2px 10px 18px;display:flex;flex-direction:column;gap:1px}
+.brand{padding:2px 10px 18px;display:flex;align-items:center;gap:11px}
+.brand>div{display:flex;flex-direction:column;gap:1px;min-width:0}
+.mono{display:block;flex:none;width:42px;height:42px;border-radius:10px}
+.mono.sm{width:34px;height:34px;border-radius:8px}
+.mono.xs{width:26px;height:26px;border-radius:6px}
 .brand b{font-family:var(--f-display);font-size:21px;font-weight:700;letter-spacing:-.025em}
 .brand span{color:var(--muted);font-size:12.5px}
 .nav a{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:9px;color:var(--ink);text-decoration:none;cursor:pointer;font-size:14px;transition:background .15s}
@@ -566,7 +571,7 @@ function renderNav(){
   const vk = viewKey(S.view);
   const badge = list => { const s = stats(list); return `<span class="n">${s.overdue?`<span class="badge red" title="Overdue">${s.overdue}</span>`:""}<span class="badge" title="Open">${s.open}</span></span>`; };
   const internal = S.role && S.role!=="client";
-  let html = `<div class="brand"><b>AXION</b><span>${internal?"PeopleOCity · Expenova · UKB IT":"Shared action items"}</span></div>
+  let html = `<div class="brand"><img class="mono" src="/monogram.png" alt="" width="42" height="42"><div><b>AXION</b><span>${internal?"PeopleOCity · Expenova · UKB IT":"Shared action items"}</span></div></div>
   <a data-act="nav" data-v="overview" class="${vk==="overview"?"on":""}">${internal?"Overall view":"Overview"} ${badge(S.actions)}</a>
   ${internal?`<a data-act="nav" data-v="weekly" class="${vk==="weekly"?"on":""}">Weekly updates</a>
   <a data-act="nav" data-v="setup" class="${vk==="setup"?"on":""}">People &amp; setup</a>`:""}
@@ -597,7 +602,7 @@ function mobNav(){
     for (const k of c.clients||[]){ o += `<option value="c:${h(c.id)}:${h(k.id)}:">${h(k.name)}</option>`; for (const t of k.teams||[]) o += `<option value="c:${h(c.id)}:${h(k.id)}:${h(t.id)}">&nbsp;&nbsp;${h(k.name)} · ${h(t.name)}</option>`; }
     o += `</optgroup>`;
   }
-  return `<div class="mobnav"><select class="inp" id="mobsel" aria-label="Go to">${o.replace(`value="${h(vk)}"`,`value="${h(vk)}" selected`)}</select><button class="btn sm" data-act="account">Account</button></div>`;
+  return `<div class="mobnav"><img class="mono sm" src="/monogram.png" alt="AXION" width="34" height="34"><select class="inp" id="mobsel" aria-label="Go to">${o.replace(`value="${h(vk)}"`,`value="${h(vk)}" selected`)}</select><button class="btn sm" data-act="account">Account</button></div>`;
 }
 
 /* ---------- main render ---------- */
@@ -1266,7 +1271,7 @@ function openPresent(){
   P = {slides: buildSlides(sc), i:0, sc};
   const host = document.getElementById("presentHost");
   host.innerHTML = `<div class="present" role="dialog" aria-modal="true" aria-label="Presentation">
-    <div class="p-bar"><span class="p-title">${h(scTitle(sc).title)}</span><span class="p-count" id="pCount"></span><span class="p-sp"></span>
+    <div class="p-bar"><img class="mono xs" src="/monogram.png" alt="AXION" width="26" height="26"><span class="p-title">${h(scTitle(sc).title)}</span><span class="p-count" id="pCount"></span><span class="p-sp"></span>
       <button class="p-btn" data-act="pfull" aria-label="Full screen">Full screen</button><button class="p-btn" data-act="pclose" aria-label="Exit presentation">Done</button></div>
     <div class="p-stage-wrap" id="pWrap"><div class="p-stage" id="pStage"></div>
       <button class="p-nav prev" data-act="pprev" aria-label="Previous slide">‹</button><button class="p-nav next" data-act="pnext" aria-label="Next slide">›</button></div>

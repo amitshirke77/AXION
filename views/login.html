@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sign in · AXION</title>
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <style>
 :root{--bg:#f5f5f7;--surface:#fff;--ink:#1d1d1f;--muted:#6e6e73;--faint:#8e8e93;--fill:rgba(118,118,128,.12);--line:rgba(60,60,67,.14);--primary:#0071e3;--primary-h:#0077ed;--red:#d70015;--red-bg:rgba(255,59,48,.10);--green:#248a3d;--green-bg:rgba(52,199,89,.14);
@@ -16,6 +17,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f);font-si
 .card{width:min(400px,100%);background:var(--surface);border-radius:22px;padding:34px 30px 28px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 40px rgba(0,0,0,.08);display:flex;flex-direction:column;gap:16px}
 h1{font-size:28px;font-weight:700;letter-spacing:-.028em;margin:0;line-height:1.15}
 .sub{color:var(--muted);margin:-8px 0 4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:var(--muted)}
 input{font:inherit;color:inherit;border:0;background:var(--fill);border-radius:12px;padding:12px 14px;outline:none;font-size:16px}
 input:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 35%,transparent)}
@@ -30,6 +32,9 @@ button[disabled]{opacity:.5;cursor:wait}
 .msg{border-radius:12px;padding:10px 14px;font-size:14px}
 .msg.err{background:var(--red-bg);color:var(--red)}.msg.ok{background:var(--green-bg);color:var(--green)}
 .foot{color:var(--faint);font-size:12px;text-align:center}
+.hero{margin:-34px -30px 6px;border-radius:22px 22px 0 0;background:#182432;display:flex;justify-content:center;padding:22px 20px 16px}
+.hero img{display:block;height:170px;width:auto;max-width:100%}
+.mono{display:block;width:52px;height:52px;border-radius:12px;margin-bottom:-4px}
 :focus-visible{outline:3px solid color-mix(in srgb,var(--primary) 55%,transparent);outline-offset:2px}
 </style>
 </head>
@@ -50,7 +55,7 @@ let CFG = { msEnabled: false, mailEnabled: false };
 function msgHTML(text, kind) { return text ? `<div class="msg ${kind}">${h(text)}</div>` : ""; }
 
 function loginView(err, ok) {
-  $("#card").innerHTML = `<h1>AXION</h1>${msgHTML(err, "err")}${msgHTML(ok, "ok")}
+  $("#card").innerHTML = `<div class="hero"><img src="/logo.png" alt="AXION · Action item tracker" width="181" height="170"></div><h1 class="sr">Sign in to AXION</h1>${msgHTML(err, "err")}${msgHTML(ok, "ok")}
     ${CFG.msEnabled ? `<button class="ms" id="msBtn" type="button">${MS_ICON}Sign in with Microsoft</button><div class="or">or use your email</div>` : ""}
     <form id="f" style="display:flex;flex-direction:column;gap:14px">
       <label>Email<input id="email" type="email" autocomplete="username" required></label>
@@ -70,7 +75,7 @@ function loginView(err, ok) {
   setTimeout(() => $("#email") && $("#email").focus(), 30);
 }
 function forgotView() {
-  $("#card").innerHTML = `<h1>Reset password</h1><p class="sub">We'll email you a link to set a new password.</p>
+  $("#card").innerHTML = `<img class="mono" src="/monogram.png" alt="AXION" width="52" height="52"><h1>Reset password</h1><p class="sub">We'll email you a link to set a new password.</p>
     <form id="f" style="display:flex;flex-direction:column;gap:14px"><label>Email<input id="email" type="email" autocomplete="username" required></label><button class="pri" id="go" type="submit">Send reset link</button></form>
     <button class="link" id="back" type="button">Back to sign in</button>`;
   $("#back").onclick = () => loginView();
@@ -84,7 +89,7 @@ async function setPasswordView(token) {
   let t;
   try { t = await api("/api/auth/token/" + encodeURIComponent(token)); } catch (_) { t = { valid: false }; }
   if (!t.valid) { loginView("This link has expired or was already used. Ask Amit for a new one, or use “Forgot password”."); history.replaceState(null, "", "/login"); return; }
-  $("#card").innerHTML = `<h1>${t.purpose === "invite" ? "Welcome" : "New password"}${t.name ? ", " + h(t.name.split(" ")[0]) : ""}</h1><p class="sub">Set a password for <b>${h(t.email)}</b>.</p><div id="m"></div>
+  $("#card").innerHTML = `<img class="mono" src="/monogram.png" alt="AXION" width="52" height="52"><h1>${t.purpose === "invite" ? "Welcome" : "New password"}${t.name ? ", " + h(t.name.split(" ")[0]) : ""}</h1><p class="sub">Set a password for <b>${h(t.email)}</b>.</p><div id="m"></div>
     <form id="f" style="display:flex;flex-direction:column;gap:14px">
       <input type="email" value="${h(t.email)}" autocomplete="username" hidden>
       <label>New password <span style="font-weight:400">(at least 10 characters)</span><input id="pw" type="password" autocomplete="new-password" minlength="10" required></label>

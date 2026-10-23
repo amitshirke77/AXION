@@ -39,6 +39,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// Static files (logo, icons, shim.js) never need the database, so they load even if Supabase is down
+app.use(express.static(PUB, { index: false, maxAge: "1h" }));
+
 // ---------- first request on each instance: schema, seed, admin ----------
 let ready = null;
 // Tables and functions come from supabase/01_schema.sql (run once in the Supabase SQL Editor).
@@ -391,7 +394,6 @@ app.get("/", async (req, res) => {
   try { if (!(await loadUser(req))) return res.redirect("/login"); res.sendFile(path.join(VIEWS, "index.html")); }
   catch (e) { const ref = await obs.captureError(e, req); res.status(500).send(`Something went wrong. Reload the page. (Reference ${ref})`); }
 });
-app.use(express.static(PUB, { index: false }));
 app.use((req, res) => res.status(404).send("Not found"));
 
 module.exports = app;
