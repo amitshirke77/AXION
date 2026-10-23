@@ -50,7 +50,7 @@ let CFG = { msEnabled: false, mailEnabled: false };
 function msgHTML(text, kind) { return text ? `<div class="msg ${kind}">${h(text)}</div>` : ""; }
 
 function loginView(err, ok) {
-  $("#card").innerHTML = `<h1>AXION</h1><p class="sub">Group action tracker · PeopleOCity · Expenova · UKB IT</p>${msgHTML(err, "err")}${msgHTML(ok, "ok")}
+  $("#card").innerHTML = `<h1>AXION</h1>${msgHTML(err, "err")}${msgHTML(ok, "ok")}
     ${CFG.msEnabled ? `<button class="ms" id="msBtn" type="button">${MS_ICON}Sign in with Microsoft</button><div class="or">or use your email</div>` : ""}
     <form id="f" style="display:flex;flex-direction:column;gap:14px">
       <label>Email<input id="email" type="email" autocomplete="username" required></label>

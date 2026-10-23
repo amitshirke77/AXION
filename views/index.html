@@ -170,6 +170,44 @@ textarea.inp{width:100%;resize:vertical}
 .fld>span em{font-style:normal;color:var(--faint);font-weight:400}
 .fld .inp{width:100%}
 .hint{font-size:12.5px;color:var(--faint)}
+/* ---------- compact density (Overall view + client/company views) ---------- */
+.dens{align-self:center}
+.dens button{padding:5px 12px}
+body.compact .wrap{gap:12px}
+body.compact .main{padding-top:20px}
+body.compact .head h1{font-size:28px}
+body.compact .crumb{margin-bottom:1px}
+body.compact .kpis{grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px}
+body.compact .kpi{padding:8px 12px 7px;border-radius:12px;flex-direction:row;align-items:baseline;gap:8px}
+body.compact .kpi .v{font-size:22px}
+body.compact .kpi .k{font-size:12px;line-height:1.2}
+body.compact .panel>header{padding:10px 16px 6px}
+body.compact .panel>header h2{font-size:16px}
+body.compact .panel .sub{font-size:12px}
+body.compact .filters{padding:2px 16px 8px;gap:6px}
+body.compact .filters .inp{padding-top:5px;padding-bottom:5px;font-size:13px}
+body.compact table.sum td{padding:4px 12px;font-size:13px}
+body.compact table.sum td:first-child{font-size:13.5px}
+body.compact table.sum tr.co td{padding-top:8px}
+body.compact table.sum tr.co td:first-child{font-size:14.5px}
+body.compact table.sum th{padding:4px 12px}
+body.compact .rows,body.compact .att{margin:0 6px 6px}
+body.compact .rowh,body.compact .row{padding:5px 10px;gap:10px;align-items:center}
+body.compact .row{border-radius:8px}
+body.compact .row .t{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.compact .row .nba{font-size:12.5px;margin-top:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.compact .row .meta{display:none}
+body.compact .row .ppl{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.35}
+.l2s{display:none}
+body.compact .row .ppl .l2b{display:none}
+body.compact .row .ppl .l2s{display:inline}
+body.compact .row .dt{font-size:12.5px}
+body.compact .row .ref{padding-top:0;font-size:11.5px}
+body.compact .row .flagdot{display:inline-block}
+.row .flagdot{display:none;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.flagdot.red{background:var(--red)} .flagdot.amber{background:var(--amber)} .flagdot.blue{background:var(--blue)}
+@media (min-width:521px){ body.compact .row .dt small{display:none} }
+body.compact .empty{padding:18px 16px}
 .stgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;padding:4px 22px 16px}
 .stc{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
 .stc .lb{font-size:14px;font-weight:500;min-width:150px}
@@ -577,6 +615,8 @@ function render(){
   if (k==="status") loadStatus(false);
 }
 
+function densityToggle(){ return `<div class="seg dens" role="group" aria-label="Density"><button class="${S.compact?"":"on"}" data-act="density" data-c="0" aria-pressed="${!S.compact}">Comfortable</button><button class="${S.compact?"on":""}" data-act="density" data-c="1" aria-pressed="${!!S.compact}">Compact</button></div>`; }
+function setDensity(on){ S.compact = !!on; document.body.classList.toggle("compact", S.compact); try { localStorage.setItem("axion.compact", S.compact ? "1" : "0"); } catch(_){} render(); }
 function scopeAttrs(sc){ return sc && sc.co ? `data-co="${h(sc.co)}" data-cl="${h(sc.cl||"")}" data-tm="${h(sc.tm||"")}"` : `data-co="" data-cl="" data-tm=""`; }
 function kpiStrip(s, scoped){
   const sa = scopeAttrs(scoped ? S.view : null); const cur = scoped ? S.filters.flag : null;
@@ -602,7 +642,7 @@ function viewOverview(){
   }
   const attention = sortActions(S.actions.filter(a=>{ const d = derive(a); return d.overdue || d.updDue || d.remDue || d.nbdSlip || (d.open && a.priority==="P1"); })).slice(0,25);
   return `<div class="head"><div><div class="crumb">${S.role==="admin"?"All three companies":h(S.me?.name||"")} · ${fmt(today())}</div><h1>${S.role==="client"?h(S.clientName||"Overview"):"Overall view"}</h1></div>
-    <div class="actions"><button class="btn" data-act="present">Present</button>${S.role!=="client"?`<button class="btn" data-act="nav" data-v="weekly">Prepare weekly update</button>`:""}${S.canCreate?`<button class="btn pri" data-act="new">New action</button>`:""}</div></div>
+    <div class="actions">${densityToggle()}<button class="btn" data-act="present">Present</button>${S.role!=="client"?`<button class="btn" data-act="nav" data-v="weekly">Prepare weekly update</button>`:""}${S.canCreate?`<button class="btn pri" data-act="new">New action</button>`:""}</div></div>
   ${kpiStrip(s,false)}
   <section class="panel"><header><h2>By company, client and team</h2><span class="sub">Health: red = a P1 is late or over 20% of open items are late · amber = anything late or an update pending</span></header>
     <div class="tblwrap"><table class="sum"><thead><tr><th>Container</th><th>Open</th><th class="ic">Late</th><th>P1/P2</th><th class="ic">Due 7d</th><th class="ic">Updates pending</th><th class="ic">Reminders</th><th>Closed last wk</th></tr></thead><tbody>${rows}</tbody></table></div></section>
@@ -627,9 +667,11 @@ function rowHTML(a, compact){
   const resp = (a.responsible||[]).map(pname).join(", ") || "—";
   const nbd = `<div class="dt c-nbd ${d.nbdSlip?"late":""}">${fmt(a.nbd)}<small>Next best date</small></div>`;
   const due = S.role==="client" && !a.due ? `<div class="dt c-due"></div>` : `<div class="dt c-due ${d.overdue?"late":""}">${fmt(a.due)}<small>Due</small></div>`;
-  const body = `<div class="c-t"><div class="t">${h(a.title)}</div>${a.nba&&d.open?`<div class="nba"><b>NBA</b> ${h(a.nba)}</div>`:""}${!d.open&&a.closureNote?`<div class="nba"><b>Closed</b> ${h(a.closureNote)}</div>`:""}<div class="meta">${flags.join("")}</div></div>`;
-  if (compact) return `<div class="row ${d.open?"":"closed"}" data-act="open" data-id="${h(a.id)}" tabindex="0"><span class="cobar" style="background:${coColor(a.companyId)}"></span><div class="ref c-ref">${h(a.ref)}</div>${body}<div class="c-pri"><span class="pri ${h(a.priority)}">${h(a.priority)}</span></div><div class="ppl c-ppl"><b>A</b> ${h(pname(a.accountable))} · <b>R</b> ${h(resp)}<br>${S.role==="client"&&!a.due?"":`<span class="${d.overdue?"late":""}">Due ${fmt(a.due)}</span> · `}NBD ${fmt(a.nbd)}</div></div>`;
-  return `<div class="row ${d.open?"":"closed"}" data-act="open" data-id="${h(a.id)}" tabindex="0"><span class="cobar" style="background:${coColor(a.companyId)}"></span><div class="ref c-ref">${h(a.ref)}</div>${body}<div class="c-pri"><span class="pri ${h(a.priority)}">${h(a.priority)}</span></div><div class="c-st"><span class="st ${stClass(a.status)}">${h(a.status)}</span></div><div class="ppl c-ppl"><b>A</b> ${h(pname(a.accountable))}<br><b>R</b> ${h(resp)}</div>${nbd}${due}</div>`;
+  const dotCls = d.overdue || (d.open && a.status==="Blocked") ? "red" : d.open && (d.nbdSlip || d.updDue) ? "amber" : d.remDue ? "blue" : "";
+  const dotTip = flags.map(f=>f.replace(/<[^>]+>/g,"")).join(" · ");
+  const body = `<div class="c-t"><div class="t" title="${h(a.title)}${dotTip?" — "+h(dotTip):""}">${dotCls?`<span class="flagdot ${dotCls}"></span>`:""}${h(a.title)}</div>${a.nba&&d.open?`<div class="nba"><b>NBA</b> ${h(a.nba)}</div>`:""}${!d.open&&a.closureNote?`<div class="nba"><b>Closed</b> ${h(a.closureNote)}</div>`:""}<div class="meta">${flags.join("")}</div></div>`;
+  if (compact) return `<div class="row ${d.open?"":"closed"}" data-act="open" data-id="${h(a.id)}" tabindex="0"><span class="cobar" style="background:${coColor(a.companyId)}"></span><div class="ref c-ref">${h(a.ref)}</div>${body}<div class="c-pri"><span class="pri ${h(a.priority)}">${h(a.priority)}</span></div><div class="ppl c-ppl"><b>A</b> ${h(pname(a.accountable))} · <b>R</b> ${h(resp)}<br class="l2b"><span class="l2s"> · </span>${S.role==="client"&&!a.due?"":`<span class="${d.overdue?"late":""}">Due ${fmt(a.due)}</span> · `}NBD ${fmt(a.nbd)}</div></div>`;
+  return `<div class="row ${d.open?"":"closed"}" data-act="open" data-id="${h(a.id)}" tabindex="0"><span class="cobar" style="background:${coColor(a.companyId)}"></span><div class="ref c-ref">${h(a.ref)}</div>${body}<div class="c-pri"><span class="pri ${h(a.priority)}">${h(a.priority)}</span></div><div class="c-st"><span class="st ${stClass(a.status)}">${h(a.status)}</span></div><div class="ppl c-ppl" title="Accountable: ${h(pname(a.accountable))} · Responsible: ${h(resp)}"><b>A</b> ${h(pname(a.accountable))}<br><b>R</b> ${h(resp)}</div>${nbd}${due}</div>`;
 }
 
 function closedPanel(list, showContainer){
@@ -639,7 +681,7 @@ function closedPanel(list, showContainer){
   const row = a => `<div class="row closedrow" data-act="open" data-id="${h(a.id)}" tabindex="0"><span class="cobar" style="background:${coColor(a.companyId)}"></span><div class="ref c-ref">${h(a.ref)}</div>
     <div class="c-t"><div class="t">${h(a.title)}</div><div class="nba"><b>${a.status==="Done"?"Outcome":"Cancelled"}</b> ${h(a.closureNote||"No closure note recorded")}</div><div class="meta">${a.status==="Done"?`<span class="chip green">Done</span>`:`<span class="chip">Cancelled</span>`}<span class="chip">${h(a.type||"Action")}</span>${showContainer?`<span class="chip">${h(containerLabel(a))}</span>`:""}${a.due && closedDay(a)>a.due?`<span class="chip amber">Closed ${diffDays(closedDay(a),a.due)}d after due</span>`:a.due?`<span class="chip green">On time</span>`:""}</div></div>
     <div class="c-pri"><span class="pri ${h(a.priority)}">${h(a.priority)}</span></div>
-    <div class="ppl c-ppl">Closed <b>${fmt(closedDay(a))}</b><br><b>A</b> ${h(pname(a.accountable))} · <b>R</b> ${h((a.responsible||[]).map(pname).join(", ")||"—")}</div></div>`;
+    <div class="ppl c-ppl">Closed <b>${fmt(closedDay(a))}</b><br class="l2b"><span class="l2s"> · </span><b>A</b> ${h(pname(a.accountable))} · <b>R</b> ${h((a.responsible||[]).map(pname).join(", ")||"—")}</div></div>`;
   return `<section class="panel"><header><div><h2>Closed ${which==="last"?"last week":"this week"}</h2><span class="sub">${fmt(b.start)} – ${fmt(b.end)} · ${done} done${canc?` · ${canc} cancelled`:""}</span></div>
     <div class="actions"><div class="seg" role="group" aria-label="Period"><button type="button" data-act="crange" data-r="last" class="${which==="last"?"on":""}">Last week</button><button type="button" data-act="crange" data-r="this" class="${which==="this"?"on":""}">This week</button></div>${items.length?`<button class="btn sm" data-act="copyClosed">Copy for update</button>`:""}</div></header>
     ${items.length ? `<div class="att">${items.map(row).join("")}</div>` : `<div class="empty"><b>Nothing closed ${which==="last"?"last week":"so far this week"}</b>Items marked Done or Cancelled, with their closure note, appear here for your update.</div>`}</section>`;
@@ -680,7 +722,7 @@ function viewContainer(){
   const flagNames = {overdue:"Past due date",p12:"Open P1 / P2",due7:"Due in 7 days",upd:"Updates pending",rem:"Reminders due",closedLast:"Closed last week"};
   const teamsNote = k && k.teams && k.teams.length && !t ? `<span class="sub">Includes ${k.teams.map(x=>h(x.name)).join(" and ")} teams</span>` : "";
   return `<div class="head"><div><div class="crumb">${c?`<span class="dot" style="display:inline-block;background:${coColor(c.id)};margin-right:6px"></span>`:`<a data-act="nav" data-v="overview" style="cursor:pointer;text-decoration:underline">Overall view</a> · `}${h(crumb)}</div><h1>${h(title)}</h1></div>
-    <div class="actions">${k && k.clientSharing ? `<span class="chip blue" style="align-self:center">Client receives weekly updates</span>`:""}<button class="btn" data-act="present">Present</button>${S.role!=="client"?`<button class="btn" data-act="weeklyHere">Weekly update for this</button>`:""}${S.canCreate?`<button class="btn pri" data-act="new">New action</button>`:""}</div></div>
+    <div class="actions">${k && k.clientSharing ? `<span class="chip blue" style="align-self:center">Client receives weekly updates</span>`:""}${densityToggle()}<button class="btn" data-act="present">Present</button>${S.role!=="client"?`<button class="btn" data-act="weeklyHere">Weekly update for this</button>`:""}${S.canCreate?`<button class="btn pri" data-act="new">New action</button>`:""}</div></div>
   ${kpiStrip(stats(scoped), true)}
   <section class="panel">
     <div class="filters">
@@ -1424,6 +1466,7 @@ document.addEventListener("click", async ev => {
       render(); window.scrollTo(0,0); break; }
     case "statusRefresh": loadStatus(true, el.dataset.smtp==="1"); break;
     case "statusTab": loadStatusTab(el.dataset.k); break;
+    case "density": setDensity(el.dataset.c==="1"); break;
     case "new": openDrawer(null); break;
     case "open": openDrawer(el.dataset.id); break;
     case "close": closeDrawer(); break;
@@ -1512,6 +1555,8 @@ async function boot(){
   document.body.classList.toggle("client", S.role==="client");
   S.canWrite = S.role!=="client"; S.canAdmin = S.role==="admin"; S.canCreate = S.role==="admin" || S.role==="editor";
   S.mail = !!S.me.mailEnabled; S.mailOK = S.mail && S.canCreate;
+  try { S.compact = localStorage.getItem("axion.compact") === "1"; } catch(_){ S.compact = false; }
+  document.body.classList.toggle("compact", !!S.compact);
   if (S.canAdmin) setTimeout(()=>loadStatus(true), 2500); // fills the error badge on "System status"
   const db = S.db;
   const fail = e => { if (e && e.code==="revoked") return; S.err = "The tracker could not load (" + (e && e.message || "error") + "). Reload to try again."; render(); };
