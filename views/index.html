@@ -47,9 +47,9 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;font-weight:700
 .nav{background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-right:1px solid var(--line);padding:22px 12px 28px max(12px, env(safe-area-inset-left,0px));position:sticky;top:0;height:100vh;overflow:auto}
 .brand{padding:2px 10px 18px;display:flex;align-items:center;gap:11px}
 .brand>div{display:flex;flex-direction:column;gap:1px;min-width:0}
-.mono{display:block;flex:none;width:42px;height:42px;border-radius:10px}
-.mono.sm{width:34px;height:34px;border-radius:8px}
-.mono.xs{width:26px;height:26px;border-radius:6px}
+.bmark{display:block;flex:none;width:42px;height:42px;border-radius:10px}
+.bmark.sm{width:34px;height:34px;border-radius:8px}
+.bmark.xs{width:26px;height:26px;border-radius:6px}
 .brand b{font-family:var(--f-display);font-size:21px;font-weight:700;letter-spacing:-.025em}
 .brand span{color:var(--muted);font-size:12.5px}
 .nav a{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:9px;color:var(--ink);text-decoration:none;cursor:pointer;font-size:14px;transition:background .15s}
@@ -156,6 +156,23 @@ textarea.inp{width:100%;resize:vertical}
 .st.ip::before{background:var(--primary)} .st.bl::before{background:var(--red)} .st.aw::before{background:#ff9500} .st.dn::before{background:#34c759}
 .late{color:var(--red)}
 .cobar{position:absolute;left:4px;top:16px;width:4px;height:18px;border-radius:2px}
+.row.sub{padding-left:40px}
+.row.sub::before{content:"↳";position:absolute;left:20px;top:13px;color:var(--faint);font-size:14px}
+body.compact .row.sub::before{top:6px}
+.subs{display:flex;flex-direction:column;border-radius:12px;overflow:hidden;background:var(--sunk)}
+.subrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;gap:10px;align-items:center;padding:9px 12px;cursor:pointer;font-size:14px;border-top:1px solid var(--line)}
+.subrow:first-child{border-top:0}
+.subrow:hover{background:var(--fill)}
+.subrow .mono{font-family:var(--f-mono);font-size:12px;color:var(--faint)}
+.subrow .stt{font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.subrow .who,.subrow .dt{color:var(--muted);font-size:13px;white-space:nowrap}
+.subrow .dt.late{color:var(--red)}
+.subrow.done{opacity:.6}
+.subrow.done .stt{text-decoration:line-through}
+.subadd{display:grid;grid-template-columns:minmax(0,1fr) 170px 150px auto;gap:8px}
+.lnk{color:var(--primary);cursor:pointer;text-decoration:none}
+.lnk:hover{text-decoration:underline}
+@media (max-width:640px){ .subadd{grid-template-columns:1fr 1fr} .subadd #s-title{grid-column:1/-1} .subrow{grid-template-columns:minmax(0,1fr) auto;row-gap:2px} .subrow .mono,.subrow .who{display:none} }
 .att{display:flex;flex-direction:column;margin:0 10px 10px}
 .att .row{grid-template-columns:100px minmax(0,1fr) 72px 220px}
 .att .row:first-child{border-top-color:transparent}
@@ -483,7 +500,24 @@ function companies(){
   return out;
 }
 const involved = a => [a.accountable,...(a.responsible||[]),...(a.consulted||[])].includes(S.meId);
-const canEditA = a => S.role==="admin" || (S.role==="editor" && scopeAllows(a.companyId, a.clientId, a.teamId));
+const masterOf = a => a && a.parentId ? S.actions.find(x=>x.id===a.parentId) || null : null;
+const kidsOf = a => a && !a.parentId ? S.actions.filter(x=>x.parentId===a.id) : [];
+const isTaskOwner = a => S.role!=="client" && !!a && a.accountable===S.meId;
+// Sub-tasks go to internal people of the main task's company, or group-wide people
+const sameOrgP = (p, coId) => !!p && p.active!==false && p.side!=="client" && (!p.companyId || p.companyId===coId);
+const canEditA = a => S.role==="admin" || (S.role==="editor" && scopeAllows(a.companyId, a.clientId, a.teamId)) || (!!a.parentId && isTaskOwner(masterOf(a)));
+const canAddSub = m => !!m && !m.parentId && !CLOSED.includes(m.status) && S.role!=="client" && (S.role==="admin" || (S.role==="editor" && scopeAllows(m.companyId, m.clientId, m.teamId)) || isTaskOwner(m));
+function subRef(m){ let max = 0; for (const a of S.actions) if (a.ref && a.ref.startsWith(m.ref+".")){ const n = parseInt(a.ref.slice(m.ref.length+1),10); if (n>max) max = n; } return `${m.ref}.${max+1}`; }
+/* Put sub-tasks directly under their main task when both are in the list */
+function nestKids(list){
+  const ids = new Set(list.map(a=>a.id)), out = [];
+  for (const a of list){
+    if (a.parentId && ids.has(a.parentId)) continue;
+    out.push(a);
+    if (!a.parentId) for (const k of list) if (k.parentId===a.id) out.push(k);
+  }
+  return out;
+}
 const canUpdA = a => canEditA(a) || (S.role==="contributor" && involved(a));
 const types = () => (S.structure?.types)||[];
 const co = id => companies().find(c=>c.id===id);
@@ -571,7 +605,7 @@ function renderNav(){
   const vk = viewKey(S.view);
   const badge = list => { const s = stats(list); return `<span class="n">${s.overdue?`<span class="badge red" title="Overdue">${s.overdue}</span>`:""}<span class="badge" title="Open">${s.open}</span></span>`; };
   const internal = S.role && S.role!=="client";
-  let html = `<div class="brand"><img class="mono" src="/monogram.png" alt="" width="42" height="42"><div><b>AXION</b><span>${internal?"PeopleOCity · Expenova · UKB IT":"Shared action items"}</span></div></div>
+  let html = `<div class="brand"><img class="bmark" src="/monogram.png" alt="" width="42" height="42"><div><b>AXION</b><span>${internal?"PeopleOCity · Expenova · UKB IT":"Shared action items"}</span></div></div>
   <a data-act="nav" data-v="overview" class="${vk==="overview"?"on":""}">${internal?"Overall view":"Overview"} ${badge(S.actions)}</a>
   ${internal?`<a data-act="nav" data-v="weekly" class="${vk==="weekly"?"on":""}">Weekly updates</a>
   <a data-act="nav" data-v="setup" class="${vk==="setup"?"on":""}">People &amp; setup</a>`:""}
@@ -602,7 +636,7 @@ function mobNav(){
     for (const k of c.clients||[]){ o += `<option value="c:${h(c.id)}:${h(k.id)}:">${h(k.name)}</option>`; for (const t of k.teams||[]) o += `<option value="c:${h(c.id)}:${h(k.id)}:${h(t.id)}">&nbsp;&nbsp;${h(k.name)} · ${h(t.name)}</option>`; }
     o += `</optgroup>`;
   }
-  return `<div class="mobnav"><img class="mono sm" src="/monogram.png" alt="AXION" width="34" height="34"><select class="inp" id="mobsel" aria-label="Go to">${o.replace(`value="${h(vk)}"`,`value="${h(vk)}" selected`)}</select><button class="btn sm" data-act="account">Account</button></div>`;
+  return `<div class="mobnav"><img class="bmark sm" src="/monogram.png" alt="AXION" width="34" height="34"><select class="inp" id="mobsel" aria-label="Go to">${o.replace(`value="${h(vk)}"`,`value="${h(vk)}" selected`)}</select><button class="btn sm" data-act="account">Account</button></div>`;
 }
 
 /* ---------- main render ---------- */
@@ -667,6 +701,9 @@ function rowHTML(a, compact){
   if (d.open && a.closeRequested) flags.push(`<span class="chip green">Closure requested</span>`);
   if (d.open && a.blockedNote && a.status==="Blocked") flags.push(`<span class="chip red">Blocked</span>`);
   if (a.sharedWithClient) flags.push(`<span class="chip blue">Client-visible</span>`);
+  const kids = kidsOf(a);
+  if (kids.length){ const dn = kids.filter(k=>CLOSED.includes(k.status)).length; flags.push(`<span class="chip ${dn===kids.length?"green":""}">Sub-tasks ${dn}/${kids.length}</span>`); }
+  if (a.parentId) flags.push(`<span class="chip" title="Sub-task of ${h(a.parentTitle||"")}">↳ ${h(a.parentRef||"Main task")}</span>`);
   flags.push(`<span class="chip">${h(a.type||"Action")}</span>`);
   if (S.view.kind!=="container" || !S.view.cl || (S.view.cl && !S.view.tm && a.teamId)) flags.push(`<span class="chip">${h(containerLabel(a))}</span>`);
   const resp = (a.responsible||[]).map(pname).join(", ") || "—";
@@ -676,7 +713,7 @@ function rowHTML(a, compact){
   const dotTip = flags.map(f=>f.replace(/<[^>]+>/g,"")).join(" · ");
   const body = `<div class="c-t"><div class="t" title="${h(a.title)}${dotTip?" — "+h(dotTip):""}">${dotCls?`<span class="flagdot ${dotCls}"></span>`:""}${h(a.title)}</div>${a.nba&&d.open?`<div class="nba"><b>NBA</b> ${h(a.nba)}</div>`:""}${!d.open&&a.closureNote?`<div class="nba"><b>Closed</b> ${h(a.closureNote)}</div>`:""}<div class="meta">${flags.join("")}</div></div>`;
   if (compact) return `<div class="row ${d.open?"":"closed"}" data-act="open" data-id="${h(a.id)}" tabindex="0"><span class="cobar" style="background:${coColor(a.companyId)}"></span><div class="ref c-ref">${h(a.ref)}</div>${body}<div class="c-pri"><span class="pri ${h(a.priority)}">${h(a.priority)}</span></div><div class="ppl c-ppl"><b>A</b> ${h(pname(a.accountable))} · <b>R</b> ${h(resp)}<br class="l2b"><span class="l2s"> · </span>${S.role==="client"&&!a.due?"":`<span class="${d.overdue?"late":""}">Due ${fmt(a.due)}</span> · `}NBD ${fmt(a.nbd)}</div></div>`;
-  return `<div class="row ${d.open?"":"closed"}" data-act="open" data-id="${h(a.id)}" tabindex="0"><span class="cobar" style="background:${coColor(a.companyId)}"></span><div class="ref c-ref">${h(a.ref)}</div>${body}<div class="c-pri"><span class="pri ${h(a.priority)}">${h(a.priority)}</span></div><div class="c-st"><span class="st ${stClass(a.status)}">${h(a.status)}</span></div><div class="ppl c-ppl" title="Accountable: ${h(pname(a.accountable))} · Responsible: ${h(resp)}"><b>A</b> ${h(pname(a.accountable))}<br><b>R</b> ${h(resp)}</div>${nbd}${due}</div>`;
+  return `<div class="row ${d.open?"":"closed"} ${a.parentId&&S.nesting?"sub":""}" data-act="open" data-id="${h(a.id)}" tabindex="0"><span class="cobar" style="background:${coColor(a.companyId)}"></span><div class="ref c-ref">${h(a.ref)}</div>${body}<div class="c-pri"><span class="pri ${h(a.priority)}">${h(a.priority)}</span></div><div class="c-st"><span class="st ${stClass(a.status)}">${h(a.status)}</span></div><div class="ppl c-ppl" title="Accountable: ${h(pname(a.accountable))} · Responsible: ${h(resp)}"><b>A</b> ${h(pname(a.accountable))}<br><b>R</b> ${h(resp)}</div>${nbd}${due}</div>`;
 }
 
 function closedPanel(list, showContainer){
@@ -739,7 +776,7 @@ function viewContainer(){
       ${f.flag?`<button class="btn sm" data-act="flag" data-flag="">${h(flagNames[f.flag])} ✕</button>`:""}
       ${teamsNote}
     </div>
-    ${list.length ? `<div class="rows"><div class="rowh"><span>Ref</span><span>Action · next best action</span><span>Priority</span><span>Status</span><span>Accountable / Responsible</span><span>NBD</span><span>Due</span></div>${list.map(a=>rowHTML(a,false)).join("")}</div>`
+    ${list.length ? `<div class="rows"><div class="rowh"><span>Ref</span><span>Action · next best action</span><span>Priority</span><span>Status</span><span>Accountable / Responsible</span><span>NBD</span><span>Due</span></div>${(S.nesting=true, nestKids(list)).map(a=>rowHTML(a,false)).join("")}${(S.nesting=false,"")}</div>`
       : `<div class="empty"><b>${scoped.length?"No items match these filters":"No action items here yet"}</b>${scoped.length?"Change the status or priority filter to see more.":`Log the first action for ${h(title)}${S.canCreate?" with New action":""}.`}</div>`}
   </section>
   ${closedPanel(scoped, !k || !!(k.teams||[]).length && !t)}`;
@@ -777,12 +814,12 @@ function pickerHTML(role, ids){
   const multi = role !== "accountable";
   const sel = multi ? (ids||[]) : (ids ? [ids] : []);
   const chips = sel.map(id=>{ const p = person(id); return `<span class="pchip ${p?.side==="client"?"client":""}">${h(p?.name||"Unknown")}${D._full?`<button type="button" data-act="unpick" data-role="${role}" data-id="${h(id)}" aria-label="Remove ${h(p?.name||"")}">×</button>`:""}</span>`; }).join("");
-  const pool = S.people.filter(p=>p.active!==false && !sel.includes(p.id));
+  const pool = S.people.filter(p=>p.active!==false && !sel.includes(p.id) && (!D.parentId || sameOrgP(p, D.companyId)));
   const rank = p => (p.clientId && p.clientId===D.clientId) ? 0 : (p.companyId===D.companyId || !p.companyId) ? 1 : 2;
   pool.sort((a,b)=>rank(a)-rank(b) || a.name.localeCompare(b.name));
   const opts = pool.map(p=>`<option value="${h(p.id)}">${h(p.name)}${p.role?` — ${h(p.role)}`:""}${p.side==="client"?" (client)":""}</option>`).join("");
   const showSel = D._full && (multi || !sel.length);
-  return `<div class="picker" id="pk-${role}">${chips}${showSel?`<select data-pick="${role}" aria-label="Add person"><option value="">${sel.length?"+ add":"Choose person…"}</option>${opts}${S.canCreate?`<option value="__new">+ Add someone to the directory…</option>`:""}</select>`:""}</div>`;
+  return `<div class="picker" id="pk-${role}">${chips}${showSel?`<select data-pick="${role}" aria-label="Add person"><option value="">${sel.length?"+ add":"Choose person…"}</option>${opts}${S.canCreate&&!D.parentId?`<option value="__new">+ Add someone to the directory…</option>`:""}</select>`:""}</div>`;
 }
 function containerSelects(){
   const c = co(D.companyId);
@@ -790,7 +827,7 @@ function containerSelects(){
   const clOpts = `<option value="">Company-level</option>` + (c?.clients||[]).map(x=>`<option value="${h(x.id)}" ${x.id===D.clientId?"selected":""}>${h(x.name)}</option>`).join("");
   const k = cl(D.companyId, D.clientId);
   const tmOpts = `<option value="">Whole client</option>` + (k?.teams||[]).map(x=>`<option value="${h(x.id)}" ${x.id===D.teamId?"selected":""}>${h(x.name)}</option>`).join("");
-  const dz = D._full ? "" : "disabled";
+  const dz = D._full && !D.parentId ? "" : "disabled";
   return `<label class="fld"><span>Company</span><select class="inp" id="f-co" ${dz}>${coOpts}</select></label>
     <label class="fld"><span>Client</span><select class="inp" id="f-cl" ${dz}>${clOpts}</select></label>
     <label class="fld" ${k?.teams?.length?"":"hidden"}><span>Team</span><select class="inp" id="f-tm" ${dz}>${tmOpts}</select></label>`;
@@ -808,13 +845,15 @@ function renderDrawer(){
   if (long && !(+D.updateEvery) && D._full) D.updateEvery = 7;
   const share = clientSharingOn(D) && S.role!=="client";
   const hdr = D.isNew ? `<div><div class="crumb">New action</div><h2>Log an action item</h2></div>`
-    : `<div><div class="crumb"><span class="mono">${h(D.ref)}</span> · ${h(containerLabel(D))}</div><h2>${h(D.title)}</h2></div>`;
+    : `<div><div class="crumb"><span class="mono">${h(D.ref)}</span> · ${h(containerLabel(D))}</div><h2>${h(D.title)}</h2>${D.parentId?`<div class="crumb" style="margin-top:4px">Sub-task of ${masterOf(D)?`<a class="lnk" data-act="open" data-id="${h(D.parentId)}">${h(D.parentRef||"")} · ${h(D.parentTitle||"")}</a>`:`${h(D.parentRef||"")} · ${h(D.parentTitle||"")}`}</div>`:""}</div>`;
   const alerts = [];
   if (!D.isNew){
     if (d.overdue) alerts.push(`<div class="callout red">Past its due date by ${diffDays(today(),D.due)} days. Update the next best action and date, or revise the due date with a reason in the trail.</div>`);
     if (D.closeRequested && d.open) alerts.push(`<div class="callout" style="background:var(--green-bg);color:var(--green);box-shadow:none">${h(pname(D.closeRequested.by))} asked to close this on ${fmt(D.closeRequested.at)}: “${h(D.closeRequested.note||"")}”. ${D._orig.accountable===S.meId||D._full?"Set the status to Done to close it, or post a comment if more is needed.":"The Accountable person will confirm."}</div>`);
     if (D.lastRequestAt && d.open && S.role!=="client") alerts.push(`<div class="callout">Update reminder emailed on ${fmt(D.lastRequestAt)}${D.lastRequestTo&&D.lastRequestTo.length?` to ${h(D.lastRequestTo.map(pname).join(", "))}`:""}.</div>`);
     if (d.updDue) alerts.push(`<div class="callout amber">A progress update is due — the last one was ${d.since} days ago and this item asks for one every ${D.updateEvery} days. ${h(((D.responsible||[]).map(pname).join(", "))||"The responsible person")} should post it below.</div>`);
+    const openKids = kidsOf(D).filter(k=>!CLOSED.includes(k.status));
+    if (d.open && openKids.length) alerts.push(`<div class="callout">This main task can close once its ${openKids.length} open sub-task${openKids.length>1?"s are":" is"} Done or Cancelled.</div>`);
     if (d.remDue) alerts.push(`<div class="callout amber">Repeat reminder: this ${h(freqLabel(D.recur.freq).toLowerCase())} item is due on ${fmt(D.recur.next)}. Mark the cycle done once it has happened.</div>`);
   }
   $("#drawerHost").innerHTML = `<div class="scrim" data-act="close"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="Action item">
@@ -857,7 +896,8 @@ function renderDrawer(){
         </div>
         <div class="hint">Ongoing items stay open; each completed cycle is logged in the trail and the next date rolls forward.</div>
       </div>
-      ${share ? `<div class="sect"><h3>Client sharing</h3><label class="chk"><input type="checkbox" id="f-share" ${D.sharedWithClient?"checked":""} ${dis}> Include this item in client-facing weekly updates for ${h(cl(D.companyId,D.clientId).name)}</label><div class="hint">Only updates you mark “visible to client” are quoted in the client email.</div></div>` : ""}
+      ${!D.isNew && !D.parentId && S.role!=="client" ? subtasksHTML() : ""}
+      ${share && !D.parentId ? `<div class="sect"><h3>Client sharing</h3><label class="chk"><input type="checkbox" id="f-share" ${D.sharedWithClient?"checked":""} ${dis}> Include this item in client-facing weekly updates for ${h(cl(D.companyId,D.clientId).name)}</label><div class="hint">Only updates you mark “visible to client” are quoted in the client email.</div></div>` : ""}
       ${D.isNew ? "" : `<div class="sect"><h3>${S.role==="client"?"Updates and comments":"Update trail"}</h3>${composeHTML()}<div class="trail" id="trail"><div class="hint">Loading trail…</div></div></div>`}
     </div>
     <div class="dfoot">${D._lite?`<button class="btn pri" data-act="save">${D.isNew?"Create action":"Save changes"}</button>`:""}
@@ -867,6 +907,46 @@ function renderDrawer(){
   </aside>`;
   if (!D.isNew) renderTrail();
   if (D.isNew) setTimeout(()=>$("#f-title")?.focus(), 30);
+}
+function subtasksHTML(){
+  const sfx = a => parseInt(String(a.ref||"").split(".").pop(),10) || 0;
+  const m = D._orig || D, kids = kidsOf(m).sort((a,b)=>sfx(a)-sfx(b)), can = canAddSub(m);
+  if (!kids.length && !can) return "";
+  const done = kids.filter(k=>CLOSED.includes(k.status)).length;
+  const t = today(), defDue = m.due && m.due >= t ? (m.due < addDays(t,7) ? m.due : addDays(t,7)) : addDays(t,7);
+  const ppl = S.people.filter(p=>sameOrgP(p, m.companyId)).sort((a,b)=>a.name.localeCompare(b.name));
+  const rows = kids.map(k=>{ const dk = derive(k); return `<div class="subrow ${dk.open?"":"done"}" data-act="open" data-id="${h(k.id)}" tabindex="0">
+      <span class="mono">${h(k.ref||"")}</span><span class="stt">${h(k.title)}</span><span class="who">${h(pname(k.accountable))}</span>
+      <span class="dt ${dk.overdue?"late":""}">${fmt(k.due)}</span><span class="st ${stClass(k.status)}">${h(k.status)}</span></div>`; }).join("");
+  return `<div class="sect" id="subSect"><h3>Sub-tasks${kids.length?` · ${done} of ${kids.length} complete`:""}</h3>
+    ${kids.length?`<div class="subs">${rows}</div>`:`<div class="hint">Break this into smaller pieces and assign each one. The main task can only be closed once every sub-task is Done or Cancelled.</div>`}
+    ${can?`<div class="subadd">
+      <input class="inp" id="s-title" placeholder="New sub-task" aria-label="Sub-task title">
+      <select class="inp" id="s-who" aria-label="Assign to"><option value="">Assign to…</option>${ppl.map(p=>`<option value="${h(p.id)}">${h(p.name)}${p.role?` — ${h(p.role)}`:""}</option>`).join("")}</select>
+      <input type="date" class="inp" id="s-due" value="${h(defDue)}" aria-label="Due date">
+      <button class="btn sm pri" data-act="addSub">Add sub-task</button></div>
+      <div class="hint">Only people in ${h(co(m.companyId)?.name||"the same organisation")} can be assigned. They get it as their own item, with its own updates and reminders.</div>`:""}</div>`;
+}
+async function addSub(btn){
+  const m = D._orig; if (!m) return;
+  const title = ($("#s-title").value||"").trim(), who = $("#s-who").value, due = $("#s-due").value;
+  if (!title){ toast("Name the sub-task."); return; }
+  if (!who){ toast("Choose who it's assigned to."); return; }
+  const t = today();
+  const data = {title, description:"", companyId:m.companyId, clientId:m.clientId||"", teamId:m.teamId||"", type:m.type, priority:m.priority, status:"Not started",
+    due:due||"", nba:title, nbd: due && due < addDays(t,3) ? due : addDays(t,3), accountable:who, responsible:[who], consulted:[], informed:[],
+    sharedWithClient:false, recur:{freq:"none", next:"", lead:1}, updateEvery: due && diffDays(due, t) > LONG_DAYS ? 7 : 0,
+    parentId:m.id, parentRef:m.ref, parentTitle:m.title, ref:subRef(m), createdAt:nowISO(), createdBy:S.meId, lastUpdateAt:null, closedAt:null, closureNote:""};
+  btn.disabled = true;
+  try {
+    const ref = S.db.collection("actions").doc();
+    await ref.set(data);
+    await addComment(ref.id, {kind:"system", text:`Created as a sub-task of ${m.ref} by ${pname(S.meId)}. Assigned to ${pname(who)}.${due?` Due ${fmt(due)}.`:""}`});
+    await addComment(m.id, {kind:"system", text:`Sub-task ${data.ref} added: ${title} → ${pname(who)}${due?`, due ${fmt(due)}`:""}`});
+    toast(`${data.ref} assigned to ${pname(who)}`);
+    for (let i=0; i<30 && !S.actions.some(x=>x.id===ref.id); i++) await new Promise(r=>setTimeout(r,100));
+    if (D && D.id===m.id){ readForm(); renderDrawer(); }
+  } catch(e){ toast(writeErr(e)); btn.disabled = false; }
 }
 function composeHTML(){
   if (S.role==="client") return `<div class="compose"><textarea class="inp" id="c-text" rows="3" placeholder="Write a comment or question for the team"></textarea><div class="rowx"><span class="hint">Your comment is visible to the Expenova team on this item.</span><button class="btn pri sm" data-act="post" style="margin-left:auto">Post comment</button></div></div>`;
@@ -919,6 +999,7 @@ async function saveDraft(){
   const closing = CLOSED.includes(D.status) && !(D._orig && CLOSED.includes(D._orig.status));
   if (closing && !D.closureNote) errs.push("a closure note");
   if (errs.length){ toast("Add " + errs.join(", ") + "."); return; }
+  if (closing && !D.isNew){ const open = kidsOf(D._orig).filter(k=>!CLOSED.includes(k.status)); if (open.length && (D._full || D._orig.accountable===S.meId)){ toast(`Finish the open sub-task${open.length>1?"s":""} first: ${open.map(k=>k.ref).join(", ")}`); return; } }
   if (D._full && isLong(D) && !(+D.updateEvery)) D.updateEvery = 7;
   if (D._full && !clientSharingOn(D)) D.sharedWithClient = false;
   if (!D._full && D._orig) for (const k of ["title","description","companyId","clientId","teamId","type","priority","due","accountable","responsible","consulted","informed","sharedWithClient","updateEvery","recur"]) D[k] = D._orig[k];
@@ -961,6 +1042,12 @@ async function saveDraft(){
     if (closing) await addComment(D.id, {kind:"update", text:`${data.status==="Done"?"Closed":"Cancelled"}: ${D.closureNote}`, visibleToClient: !!D.sharedWithClient});
     if (changes.length) await addComment(D.id, {kind:"system", text: changes.join("\n")});
     toast(changes.length || closing ? "Saved and logged in the trail" : "Saved");
+    if (closing && o.parentId){
+      const m = masterOf(o);
+      if (m){ await addComment(m.id, {kind:"system", text:`Sub-task ${o.ref} ${data.status==="Done"?"completed":"cancelled"}: ${D.closureNote}`}).catch(()=>{});
+        const left = kidsOf(m).filter(k=>k.id!==o.id && !CLOSED.includes(k.status));
+        if (!left.length) toast(`All sub-tasks of ${m.ref} are complete — it can be closed now`); }
+    }
     closeDrawer();
   } catch(e){ toast(writeErr(e)); if (btn) btn.disabled = false; }
 }
@@ -1271,7 +1358,7 @@ function openPresent(){
   P = {slides: buildSlides(sc), i:0, sc};
   const host = document.getElementById("presentHost");
   host.innerHTML = `<div class="present" role="dialog" aria-modal="true" aria-label="Presentation">
-    <div class="p-bar"><img class="mono xs" src="/monogram.png" alt="AXION" width="26" height="26"><span class="p-title">${h(scTitle(sc).title)}</span><span class="p-count" id="pCount"></span><span class="p-sp"></span>
+    <div class="p-bar"><img class="bmark xs" src="/monogram.png" alt="AXION" width="26" height="26"><span class="p-title">${h(scTitle(sc).title)}</span><span class="p-count" id="pCount"></span><span class="p-sp"></span>
       <button class="p-btn" data-act="pfull" aria-label="Full screen">Full screen</button><button class="p-btn" data-act="pclose" aria-label="Exit presentation">Done</button></div>
     <div class="p-stage-wrap" id="pWrap"><div class="p-stage" id="pStage"></div>
       <button class="p-nav prev" data-act="pprev" aria-label="Previous slide">‹</button><button class="p-nav next" data-act="pnext" aria-label="Next slide">›</button></div>
@@ -1474,6 +1561,7 @@ document.addEventListener("click", async ev => {
     case "density": setDensity(el.dataset.c==="1"); break;
     case "new": openDrawer(null); break;
     case "open": openDrawer(el.dataset.id); break;
+    case "addSub": addSub(el); break;
     case "close": closeDrawer(); break;
     case "save": saveDraft(); break;
     case "cycle": cycleDone(); break;

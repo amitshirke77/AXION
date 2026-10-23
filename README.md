@@ -51,6 +51,8 @@ People & setup → press **Edit** on a person → **Login access**:
 | Contributor | Ticked scope + any item they're on | Status, next step and dates, progress updates on items where they are A, R or C. Only the Accountable person can close; others send a closure request |
 | Client view | Items marked client-visible for their own client | Comments only. Internal notes, update cadence and (for Expenova) due dates are never sent to them |
 
+**Sub-tasks.** Open any action and use **Sub-tasks** to split it up. The task owner (its Accountable person), editors and admins can add them. Each sub-task is assigned to someone in the same company as the main task (or a group-wide person) and becomes their own item, with its own reference (`CUSTCAP-026.1`), status, dates, update trail and reminders. The task owner can edit or reassign their sub-tasks even with Contributor access. The main task can only be set to Done or Cancelled once every sub-task is Done or Cancelled, and a main task with sub-tasks can't be deleted until they are. Sub-tasks stay internal unless an editor shares them with the client.
+
 Then **Email invite** (needs email set up) or **Get invite link** and send it yourself. The link lets them set a password; it works for 7 days.
 
 ## Microsoft sign-in (optional)

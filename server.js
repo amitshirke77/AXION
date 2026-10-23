@@ -206,9 +206,12 @@ app.get("/api/auth/me", wrap(async (req, res) => {
 app.get("/api/rev", wrap(async (req, res) => { await needUser(req); res.json({ rev: await store.rev() }); }));
 
 // Load what the access rules need for this path (parent action, client's people refs, hidden due dates)
-async function ctxFor(u, segs) {
+// data = the action itself for action documents (old or new version), so its main task can be loaded
+async function ctxFor(u, segs, data) {
   const ctx = {};
   if (segs[0] === "actions" && segs.length >= 3) { const a = await store.getDoc(`actions/${segs[1]}`); ctx.parent = a ? a.data : null; }
+  const self = segs[0] === "actions" ? (segs.length >= 3 ? ctx.parent : data) : null;
+  if (self && self.parentId) { const m = await store.getDoc(`actions/${self.parentId}`); ctx.master = m ? m.data : null; }
   if (u.role === "client") {
     ctx.hideDue = (await settingsData()).hideDueFor || ["exp"];
     if (segs[0] === "people") ctx.refs = access.clientRefs(u, (await store.listColl("actions")).map((d) => d.data));
@@ -221,7 +224,7 @@ app.get("/api/db/doc", wrap(async (req, res) => {
   const segs = store.splitPath(req.query.path);
   if (segs.length % 2) throw err(400, "Not a document path.");
   const d = await store.getDoc(segs.join("/"));
-  const ctx = await ctxFor(u, segs);
+  const ctx = await ctxFor(u, segs, d && d.data);
   if (!d || !access.canReadDoc(u, segs, d.data, ctx)) return res.json({ id: segs[segs.length - 1], exists: false });
   res.json(shape(d, access.redact(u, segs, d.data, ctx)));
 }));
@@ -230,9 +233,11 @@ app.get("/api/db/coll", wrap(async (req, res) => {
   const segs = store.splitPath(req.query.path);
   if (!(segs.length % 2)) throw err(400, "Not a collection path.");
   const ctx = await ctxFor(u, segs);
-  if (segs[0] === "actions" && segs.length === 3 && !access.canReadAction(u, ctx.parent)) return res.json({ docs: [] });
+  if (segs[0] === "actions" && segs.length === 3 && !access.canReadAction(u, ctx.parent, ctx.master)) return res.json({ docs: [] });
   const docs = [];
-  for (const d of await store.listColl(segs.join("/"))) {
+  const all = await store.listColl(segs.join("/"));
+  if (segs.length === 1 && segs[0] === "actions") { ctx.masters = {}; for (const d of all) ctx.masters[d.id] = d.data; }
+  for (const d of all) {
     const ds = [...segs, d.id];
     if (access.canReadDoc(u, ds, d.data, ctx)) docs.push(shape(d, access.redact(u, ds, d.data, ctx)));
   }
@@ -247,7 +252,11 @@ async function write(u, path_, op, data, req) {
   if ((op === "update" || op === "delete") && !old) throw err(400, "That item no longer exists.");
   if (data !== null && (typeof data !== "object" || Array.isArray(data))) throw err(400, "Bad data.");
   const next = op === "delete" ? null : op === "update" ? store.mergeDeep(old.data, data) : data;
-  const ctx = await ctxFor(u, segs);
+  const ctx = await ctxFor(u, segs, next || (old && old.data));
+  if (segs[0] === "actions" && segs.length === 2) {
+    if (old) ctx.children = await store.listChildren(segs[1]);
+    if ((next && next.parentId) || (old && old.data.parentId)) { ctx.people = {}; for (const d of await store.listColl("people")) ctx.people[d.id] = d.data; }
+  }
   const out = access.checkWrite(u, segs, old ? old.data : null, next, op === "delete" ? "delete" : old ? "set" : "create", ctx);
   const label = (out || (old && old.data) || {}).ref || (out || (old && old.data) || {}).name || null;
   if (op === "delete") { await store.deleteDoc(p); await obs.audit(req, "doc.delete", { path: p, label }); return { id: segs[segs.length - 1], deleted: true }; }
