@@ -2,6 +2,8 @@
 
 Action tracking for PeopleOCity, Expenova and UKB IT Solutions: a container per client and team, ARCI, next best action and date, P1–P4 priorities, meeting types, repeat reminders, update trails, weekly updates and a present mode. Anyone you add can sign in from the public link with Microsoft or with an email and password.
 
+**Internal, non-commercial tool.** AXION is not a commercial product and is not offered for sale or licence. “AXION” is an internal project name only; it is not used as a trademark or trade name and is not intended to infringe any trademark, trade name or copyright. A disclaimer to this effect is shown on the sign-in pages, at the foot of every page and in Help → About AXION.
+
 **Keep this repository private.** `seed/seed.json` holds your current action items and contacts. It is loaded once, on the first request, into an empty database, and is never served to browsers.
 
 ## How it runs on Vercel
@@ -56,6 +58,10 @@ People & setup → press **Edit** on a person → **Login access**:
 **Client-raised items.** Client logins can press **New action** to track their own work. Those items are private to the client (and colleagues they name) until they assign someone from your team as Accountable or Responsible; from then on that person and your team see them as usual, labelled *Raised by client*, and the client keeps seeing them. Private items are never shown to admins, never counted in your dashboards, never emailed about, and their references are left out of the activity log. A team member can't remove the last team person from a client-raised item.
 
 Then **Email invite** (needs email set up) or **Get invite link** and send it yourself. The link lets them set a password; it works for 7 days.
+
+## Minutes of meeting
+
+**Meetings & minutes** (left menu) records meetings and produces a PDF: company logo, details, attendees, agenda, discussion, decisions and the action items agreed, with owner, next step, dates and status. Editors can **Download PDF** or **Send PDF**, which emails it as an attachment through the SMTP settings. New actions can be created from the minutes. Logos live in `assets/logos/` (`poc.png`, `exp.png`, `ukb.png`, matched by company id); replace a file to change a logo. The PDF is built on the server with `pdfkit` (bundled in `vercel.json`).
 
 ## Help for users
 

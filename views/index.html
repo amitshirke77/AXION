@@ -192,7 +192,23 @@ body.compact .row.sub::before{top:6px}
 .fld>span em{font-style:normal;color:var(--faint);font-weight:400}
 .fld .inp{width:100%}
 .hint{font-size:12.5px;color:var(--faint)}
-/* ---------- help ---------- */
+.mlist{display:flex;flex-direction:column;margin:0 10px 10px}
+.mrow{display:grid;grid-template-columns:80px minmax(0,1fr) 170px 90px;gap:14px;align-items:center;padding:12px 14px;border-top:1px solid var(--line);cursor:pointer;position:relative;border-radius:12px}
+.mrow:first-child{border-top-color:transparent}
+.mrow:hover{background:var(--sunk)}
+.mrow .md b{display:block;font-size:14px}.mrow .md small{color:var(--faint);font-size:12px}
+.mrow .t{font-weight:600}
+.mrow .meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.mrow .mc{color:var(--muted);font-size:13px}
+.mrow .ms{text-align:right}
+.subadd.mlink{grid-template-columns:minmax(0,1fr) auto}
+.subrow .btn.x{padding:2px 9px}
+@media (max-width:640px){ .mrow{grid-template-columns:70px minmax(0,1fr)} .mrow .mc,.mrow .ms{display:none} .subadd.mlink{grid-template-columns:1fr} }
+footer.disc{font-size:11.5px;line-height:1.5;color:var(--faint);border-top:1px solid var(--line);padding:14px 4px 0;margin-top:8px}
+footer.disc b{color:var(--muted);font-weight:600}
+footer.disc a{color:var(--primary);cursor:pointer}
+.p-disc{text-align:center;font-size:11px;color:var(--s-faint,#6e6e73);padding:0 0 10px}
+/* ---------- help page styles ---------- */
 .hlay{display:grid;grid-template-columns:240px minmax(0,1fr);gap:18px;align-items:start}
 .htoc{position:sticky;top:20px;display:flex;flex-direction:column;padding:12px;gap:1px;max-height:calc(100vh - 40px);overflow:auto}
 .htoc .inp{margin-bottom:8px}
@@ -285,6 +301,23 @@ body.compact .empty{padding:18px 16px}
 .ev .who b{color:var(--ink);font-weight:600}
 .ev .txt{white-space:pre-wrap;margin-top:3px;overflow-wrap:anywhere}
 .ev.system .txt{color:var(--muted);font-size:13.5px}
+.ev.blocker{background:var(--red-bg);border-radius:12px;padding:8px 12px 10px 18px;margin:0 0 12px}
+.ev.blocker::before{border-color:var(--red);background:var(--red);top:13px}
+.ev.blocker .txt{color:var(--red);font-weight:500}
+.blkchk{color:var(--red);font-weight:500}
+.actl{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:6px;row-gap:1px;margin-top:7px;font-size:12.5px;color:var(--muted);min-width:0;border-left:2px solid var(--line);padding:3px 6px 3px 8px}
+.actl .k{font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--faint)}
+.actl b{color:var(--ink);font-weight:600;white-space:nowrap}
+.actl .ago{white-space:nowrap;color:var(--faint)}
+.actl .tx{flex-basis:100%;min-width:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;color:var(--ink);line-height:1.4}
+.actl.upd{border-left-color:var(--primary)} .actl.upd .k{color:var(--primary)}
+.actl.blk{border-left-color:var(--red);background:var(--red-bg);border-radius:0 6px 6px 0;padding-right:6px} .actl.blk .k,.actl.blk .tx{color:var(--red)}
+.actl.new{background:color-mix(in srgb,var(--primary) 9%,transparent);border-radius:0 6px 6px 0;padding-right:6px}
+.actl.new.blk{background:var(--red-bg)}
+.newpill{background:var(--primary);color:#fff;font-size:10.5px;font-weight:600;border-radius:999px;padding:1px 7px;align-self:center}
+body.compact .actl{display:none}
+.newdot{display:none;width:7px;height:7px;border-radius:50%;background:var(--primary);margin-right:6px;vertical-align:1px}
+body.compact .row .t .newdot{display:inline-block}
 .compose{display:flex;flex-direction:column;gap:10px;background:var(--sunk);border-radius:14px;padding:12px}
 .compose .inp{background:var(--surface)}
 .compose .rowx{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -594,10 +627,10 @@ function inScope(a, sc){
 function stats(list){
   const t = today(), wkAgo = addDays(t,-7);
   const lw = weekBounds("last");
-  const s = {open:0, overdue:0, p12:0, due7:0, upd:0, rem:0, closed7:0, closedLast:0, total:list.length};
+  const s = {open:0, overdue:0, p12:0, due7:0, upd:0, rem:0, blocked:0, closed7:0, closedLast:0, total:list.length};
   for (const a of list){ if (a.parentId) continue; // counts are main tasks only; sub-task progress shows on the main task
     const d = derive(a);
-    if (d.open){ s.open++; if(d.overdue) s.overdue++; if(a.priority==="P1"||a.priority==="P2") s.p12++; if(d.due7) s.due7++; if(d.updDue) s.upd++; if(d.remDue) s.rem++; }
+    if (d.open){ s.open++; if(a.status==="Blocked") s.blocked++; if(d.overdue) s.overdue++; if(a.priority==="P1"||a.priority==="P2") s.p12++; if(d.due7) s.due7++; if(d.updDue) s.upd++; if(d.remDue) s.rem++; }
     else if (a.status==="Done" && a.closedAt){ const cd = closedDay(a); if (cd >= wkAgo) s.closed7++; if (cd>=lw.start && cd<=lw.end) s.closedLast++; }
   }
   return s;
@@ -632,7 +665,8 @@ function renderNav(){
   const internal = S.role && S.role!=="client";
   let html = `<div class="brand"><img class="bmark" src="/monogram.png" alt="" width="42" height="42"><div><b>AXION</b><span>${internal?"PeopleOCity · Expenova · UKB IT":"Shared action items"}</span></div></div>
   <a data-act="nav" data-v="overview" class="${vk==="overview"?"on":""}">${internal?"Overall view":"Overview"} ${badge(S.actions)}</a>
-  ${internal?`<a data-act="nav" data-v="weekly" class="${vk==="weekly"?"on":""}">Weekly updates</a>
+  ${internal?`<a data-act="nav" data-v="meetings" class="${vk==="meetings"?"on":""}">Meetings &amp; minutes</a>
+  <a data-act="nav" data-v="weekly" class="${vk==="weekly"?"on":""}">Weekly updates</a>
   <a data-act="nav" data-v="setup" class="${vk==="setup"?"on":""}">People &amp; setup</a>`:""}
   <a data-act="nav" data-v="help" class="${vk==="help"?"on":""}">Help</a>
   ${S.role==="admin"?`<a data-act="nav" data-v="status" class="${vk==="status"?"on":""}">System status ${S.statusAlert?`<span class="n"><span class="badge red" title="Errors in the last 24 hours">${S.statusAlert}</span></span>`:""}</a>`:""}`;
@@ -656,7 +690,7 @@ function renderNav(){
 }
 function mobNav(){
   const vk = viewKey(S.view);
-  let o = S.role!=="client" ? `<option value="overview">Overall view</option><option value="weekly">Weekly updates</option><option value="setup">People &amp; setup</option>${S.role==="admin"?`<option value="status">System status</option>`:""}<option value="help">Help</option>` : `<option value="overview">Overview</option><option value="help">Help</option>`;
+  let o = S.role!=="client" ? `<option value="overview">Overall view</option><option value="meetings">Meetings &amp; minutes</option><option value="weekly">Weekly updates</option><option value="setup">People &amp; setup</option>${S.role==="admin"?`<option value="status">System status</option>`:""}<option value="help">Help</option>` : `<option value="overview">Overview</option><option value="help">Help</option>`;
   for (const c of companies()){
     o += `<optgroup label="${h(c.name)}"><option value="c:${h(c.id)}::">${h(c.name)} — all</option>`;
     for (const k of c.clients||[]){ o += `<option value="c:${h(c.id)}:${h(k.id)}:">${h(k.name)}</option>`; for (const t of k.teams||[]) o += `<option value="c:${h(c.id)}:${h(k.id)}:${h(t.id)}">&nbsp;&nbsp;${h(k.name)} · ${h(t.name)}</option>`; }
@@ -669,24 +703,26 @@ function mobNav(){
 function render(){
   renderNav();
   const m = $("#main");
-  if (S.err){ m.innerHTML = mobNav() + `<div class="banner">${h(S.err)}</div>`; return; }
+  if (S.err){ m.innerHTML = mobNav() + `<div class="banner">${h(S.err)}</div>` + DISCLAIMER_HTML; return; }
   if (!S.structureLoaded || !S.actionsLoaded){ return; }
   const ro = S.role==="client" ? `<div class="banner" style="background:var(--blue-bg);color:var(--blue)">Action items shared with ${h(S.clientName||"your team")}, plus your own. Press <b>New action</b> to track your own work: it stays private to you until you assign someone from the team.</div>` : "";
-  if (S.role==="client" && (S.view.kind==="weekly" || S.view.kind==="setup")) S.view = {kind:"overview"};
+  if (S.role==="client" && (S.view.kind==="weekly" || S.view.kind==="setup" || S.view.kind==="meetings")) S.view = {kind:"overview"};
   if (S.view.kind==="status" && S.role!=="admin") S.view = {kind:"overview"};
   const k = S.view.kind;
-  m.innerHTML = mobNav() + ro + (k==="overview" ? viewOverview() : k==="container" ? viewContainer() : k==="weekly" ? viewWeekly() : k==="status" ? viewStatus() : k==="help" ? viewHelp() : viewSetup());
+  m.innerHTML = mobNav() + ro + (k==="overview" ? viewOverview() : k==="container" ? viewContainer() : k==="weekly" ? viewWeekly() : k==="status" ? viewStatus() : k==="help" ? viewHelp() : k==="meetings" ? viewMeetings() : viewSetup()) + DISCLAIMER_HTML;
   if (k==="weekly") hydrateWeekly();
   if (k==="status") loadStatus(false);
 }
 
 function densityToggle(){ return `<div class="seg dens" role="group" aria-label="Density"><button class="${S.compact?"":"on"}" data-act="density" data-c="0" aria-pressed="${!S.compact}">Comfortable</button><button class="${S.compact?"on":""}" data-act="density" data-c="1" aria-pressed="${!!S.compact}">Compact</button></div>`; }
 function setDensity(on){ S.compact = !!on; document.body.classList.toggle("compact", S.compact); try { localStorage.setItem("axion.compact", S.compact ? "1" : "0"); } catch(_){} render(); }
+/* Shown at the foot of every page */
+const DISCLAIMER_HTML = `<footer class="disc" role="contentinfo"><b>Disclaimer.</b> AXION is an internal tool used by PeopleOCity LLP, Expenova BPO Solutions and UKB IT Solutions to track action items with their teams and clients. It is not a commercial product, is not offered for sale or licence, and is for internal, non-commercial use only. “AXION” is an internal project name. It is not used as a trademark or trade name, and no claim is made to, or infringement intended of, any trademark, trade name or copyright belonging to others. <a data-help="about">More</a></footer>`;
 function scopeAttrs(sc){ return sc && sc.co ? `data-co="${h(sc.co)}" data-cl="${h(sc.cl||"")}" data-tm="${h(sc.tm||"")}"` : `data-co="" data-cl="" data-tm=""`; }
 function kpiStrip(s, scoped){
   const sa = scopeAttrs(scoped ? S.view : null); const cur = scoped ? S.filters.flag : null;
   const cell = (v,k,cls,flag) => `<button type="button" class="kpi ${v?cls:""} ${cur===flag&&scoped?"sel":""}" data-act="drill" data-flag="${flag}" ${sa} aria-label="Show ${h(k.toLowerCase())}: ${v}"><span class="v">${v}</span><span class="k">${k}</span></button>`;
-  return `<div class="kpis">${cell(s.open,"Open actions","","open")}${S.role==="client"?"":cell(s.overdue,"Past due date","red","overdue")}${cell(s.p12,"Open P1 / P2","amber","p12")}${S.role==="client"?"":cell(s.due7,"Due in 7 days","","due7")}${S.role==="client"?"":cell(s.upd,"Updates pending","amber","upd")+cell(s.rem,"Repeat reminders due","","rem")}${cell(s.closedLast,"Closed last week","green","closedLast")}</div>`;
+  return `<div class="kpis">${cell(s.open,"Open actions","","open")}${S.role==="client"?"":cell(s.overdue,"Past due date","red","overdue")}${cell(s.blocked,"Blocked","red","blocked")}${cell(s.p12,"Open P1 / P2","amber","p12")}${S.role==="client"?"":cell(s.due7,"Due in 7 days","","due7")}${S.role==="client"?"":cell(s.upd,"Updates pending","amber","upd")+cell(s.rem,"Repeat reminders due","","rem")}${cell(s.closedLast,"Closed last week","green","closedLast")}</div>`;
 }
 
 function viewOverview(){
@@ -705,7 +741,7 @@ function viewOverview(){
     }
     if (!(c.clients||[]).length || ca.some(a=>!a.clientId)) rows += line("cl", "Company-level", ca.filter(a=>!a.clientId), `data-act="nav" data-v="c" data-co="${h(c.id)}" data-cl="_co"`);
   }
-  const attention = sortActions(S.actions.filter(a=>{ const d = derive(a); return d.overdue || d.updDue || d.remDue || d.nbdSlip || (d.open && a.priority==="P1"); })).slice(0,25);
+  const attention = sortActions(S.actions.filter(a=>{ const d = derive(a); return (d.open && a.status==="Blocked") || d.overdue || d.updDue || d.remDue || d.nbdSlip || (d.open && a.priority==="P1"); })).slice(0,25);
   return `<div class="head"><div><div class="crumb">${S.role==="admin"?"All three companies":h(S.me?.name||"")} · ${fmt(today())}</div><h1>${S.role==="client"?h(S.clientName||"Overview"):"Overall view"}</h1></div>
     <div class="actions">${densityToggle()}<button class="btn" data-act="present">Present</button>${S.role!=="client"?`<button class="btn" data-act="nav" data-v="weekly">Prepare weekly update</button>`:""}${S.canCreate||S.role==="client"?`<button class="btn pri" data-act="new">New action</button>`:""}</div></div>
   ${kpiStrip(s,false)}
@@ -716,6 +752,24 @@ function viewOverview(){
   ${closedPanel(S.actions, true)}`;
 }
 
+/* ---------- latest activity + "new since you looked" ---------- */
+const SEEN_KEY = "axion.seen";
+function seenMap(){ if (S._seen) return S._seen; let m = null; try { m = JSON.parse(localStorage.getItem(SEEN_KEY)||"null"); } catch(_){}
+  if (!m || typeof m!=="object") { m = {_base: Date.now()}; try { localStorage.setItem(SEEN_KEY, JSON.stringify(m)); } catch(_){} }
+  return (S._seen = m); }
+function markSeen(id){ const m = seenMap(); m[id] = Date.now(); const keys = Object.keys(m).filter(k=>k!=="_base"); if (keys.length > 800) keys.sort((a,b)=>m[a]-m[b]).slice(0, keys.length-800).forEach(k=>delete m[k]); try { localStorage.setItem(SEEN_KEY, JSON.stringify(m)); } catch(_){} }
+function latestOf(a){
+  if (a.lastActivity && a.lastActivity.at) return a.lastActivity;
+  if (a.lastUpdateAt && a.lastUpdateText) return {at:a.lastUpdateAt, by:a.lastUpdateBy||null, kind:"update", text:a.lastUpdateText, blocker:false};
+  return null;
+}
+function isNewFor(a){ const x = latestOf(a); if (!x || !x.at || (x.by && x.by===S.meId)) return false; const m = seenMap(); const t = Date.parse(x.at); return t > Math.max(m[a.id]||0, m._base||0) && Date.now()-t < 14*864e5; }
+function agoTxt(ms){ const s = Math.max(0, Math.round((Date.now()-ms)/1000)); if (s<60) return "just now"; if (s<3600) return Math.round(s/60)+" min ago"; if (s<86400) return Math.round(s/3600)+" h ago"; const d = Math.round(s/86400); return d===1?"yesterday":d+" days ago"; }
+function activityHTML(a){
+  const x = latestOf(a); if (!x || !x.text) return "";
+  const nw = isNewFor(a), kind = x.blocker ? "Blocker" : x.kind==="update" ? "Update" : x.kind==="system" ? "Change" : "Comment";
+  return `<div class="actl ${x.blocker?"blk":x.kind==="update"?"upd":""} ${nw?"new":""}" title="${h(x.text)}">${nw?`<span class="newpill">New</span>`:""}<span class="k">${kind}</span><b>${h(x.by?pname(x.by):"Tracker")}</b><span class="ago">${agoTxt(Date.parse(x.at))}</span><span class="tx">${h(x.text)}</span></div>`;
+}
 function rowHTML(a, compact){
   const d = derive(a);
   const flags = [];
@@ -725,7 +779,7 @@ function rowHTML(a, compact){
   if (d.remDue) flags.push(`<span class="chip blue">Reminder · ${fmt(a.recur.next)}</span>`);
   else if (d.recurring && d.open) flags.push(`<span class="chip">Repeats ${h(freqLabel(a.recur.freq).toLowerCase())}</span>`);
   if (d.open && a.closeRequested) flags.push(`<span class="chip green">Closure requested</span>`);
-  if (d.open && a.blockedNote && a.status==="Blocked") flags.push(`<span class="chip red">Blocked</span>`);
+  if (d.open && a.status==="Blocked") flags.push(`<span class="chip red" ${a.blockedNote?`title="${h(a.blockedNote)}"`:""}>⛔ Blocked</span>`);
   if (S.role==="client" && a.privateToClient) flags.push(`<span class="chip">🔒 Private</span>`);
   else if (a.createdByClient) flags.push(`<span class="chip blue">${S.role==="client"?"Raised by "+h(a.createdBy===S.meId?"you":pname(a.createdBy)):"Raised by client"}</span>`);
   else if (a.sharedWithClient && S.role!=="client") flags.push(`<span class="chip blue">Client-visible</span>`);
@@ -739,7 +793,8 @@ function rowHTML(a, compact){
   const due = S.role==="client" && !a.due ? `<div class="dt c-due"></div>` : `<div class="dt c-due ${d.overdue?"late":""}">${fmt(a.due)}<small>Due</small></div>`;
   const dotCls = d.overdue || (d.open && a.status==="Blocked") ? "red" : d.open && (d.nbdSlip || d.updDue) ? "amber" : d.remDue ? "blue" : "";
   const dotTip = flags.map(f=>f.replace(/<[^>]+>/g,"")).join(" · ");
-  const body = `<div class="c-t"><div class="t" title="${h(a.title)}${dotTip?" — "+h(dotTip):""}">${dotCls?`<span class="flagdot ${dotCls}"></span>`:""}${h(a.title)}</div>${a.nba&&d.open?`<div class="nba"><b>NBA</b> ${h(a.nba)}</div>`:""}${!d.open&&a.closureNote?`<div class="nba"><b>Closed</b> ${h(a.closureNote)}</div>`:""}<div class="meta">${flags.join("")}</div></div>`;
+  const actLine = activityHTML(a);
+  const body = `<div class="c-t">${""}<div class="t" title="${h(a.title)}${dotTip?" — "+h(dotTip):""}">${isNewFor(a)?`<span class="newdot" title="New update"></span>`:""}${dotCls?`<span class="flagdot ${dotCls}"></span>`:""}${h(a.title)}</div>${a.nba&&d.open?`<div class="nba"><b>NBA</b> ${h(a.nba)}</div>`:""}${!d.open&&a.closureNote?`<div class="nba"><b>Closed</b> ${h(a.closureNote)}</div>`:""}${actLine}<div class="meta">${flags.join("")}</div></div>`;
   if (compact) return `<div class="row ${d.open?"":"closed"}" data-act="open" data-id="${h(a.id)}" tabindex="0"><span class="cobar" style="background:${coColor(a.companyId)}"></span><div class="ref c-ref">${h(a.ref)}</div>${body}<div class="c-pri"><span class="pri ${h(a.priority)}">${h(a.priority)}</span></div><div class="ppl c-ppl"><b>A</b> ${h(pname(a.accountable))} · <b>R</b> ${h(resp)}<br class="l2b"><span class="l2s"> · </span>${S.role==="client"&&!a.due?"":`<span class="${d.overdue?"late":""}">Due ${fmt(a.due)}</span> · `}NBD ${fmt(a.nbd)}</div></div>`;
   return `<div class="row ${d.open?"":"closed"} ${a.parentId&&S.nesting?"sub":""}" data-act="open" data-id="${h(a.id)}" tabindex="0"><span class="cobar" style="background:${coColor(a.companyId)}"></span><div class="ref c-ref">${h(a.ref)}</div>${body}<div class="c-pri"><span class="pri ${h(a.priority)}">${h(a.priority)}</span></div><div class="c-st"><span class="st ${stClass(a.status)}">${h(a.status)}</span></div><div class="ppl c-ppl" title="Accountable: ${h(pname(a.accountable))} · Responsible: ${h(resp)}"><b>A</b> ${h(pname(a.accountable))}<br><b>R</b> ${h(resp)}</div>${nbd}${due}</div>`;
 }
@@ -779,6 +834,7 @@ function viewContainer(){
     if (f.person && !([a.accountable,...(a.responsible||[]),...(a.consulted||[]),...(a.informed||[])].includes(f.person))) return false;
     if (f.flag && a.parentId) return false; // dashboard numbers count main tasks only
     if (f.flag==="overdue" && !d.overdue) return false;
+    if (f.flag==="blocked" && !(d.open && a.status==="Blocked")) return false;
     if (f.flag==="p12" && !(d.open && (a.priority==="P1"||a.priority==="P2"))) return false;
     if (f.flag==="due7" && !d.due7) return false;
     if (f.flag==="upd" && !d.updDue) return false;
@@ -790,10 +846,10 @@ function viewContainer(){
   list = sortActions(list);
   const peopleIds = [...new Set(scoped.flatMap(a=>[a.accountable,...(a.responsible||[]),...(a.consulted||[]),...(a.informed||[])]).filter(Boolean))];
   const opt = (val, lab, cur) => `<option value="${h(val)}" ${cur===val?"selected":""}>${h(lab)}</option>`;
-  const flagNames = {overdue:"Past due date",p12:"Open P1 / P2",due7:"Due in 7 days",upd:"Updates pending",rem:"Reminders due",closedLast:"Closed last week"};
+  const flagNames = {blocked:"Blocked",overdue:"Past due date",p12:"Open P1 / P2",due7:"Due in 7 days",upd:"Updates pending",rem:"Reminders due",closedLast:"Closed last week"};
   const teamsNote = k && k.teams && k.teams.length && !t ? `<span class="sub">Includes ${k.teams.map(x=>h(x.name)).join(" and ")} teams</span>` : "";
   return `<div class="head"><div><div class="crumb">${c?`<span class="dot" style="display:inline-block;background:${coColor(c.id)};margin-right:6px"></span>`:`<a data-act="nav" data-v="overview" style="cursor:pointer;text-decoration:underline">Overall view</a> · `}${h(crumb)}</div><h1>${h(title)}</h1></div>
-    <div class="actions">${k && k.clientSharing ? `<span class="chip blue" style="align-self:center">Client receives weekly updates</span>`:""}${densityToggle()}<button class="btn" data-act="present">Present</button>${S.role!=="client"?`<button class="btn" data-act="weeklyHere">Weekly update for this</button>`:""}${S.canCreate||S.role==="client"?`<button class="btn pri" data-act="new">New action</button>`:""}</div></div>
+    <div class="actions">${k && k.clientSharing ? `<span class="chip blue" style="align-self:center">Client receives weekly updates</span>`:""}${densityToggle()}<button class="btn" data-act="present">Present</button>${S.role!=="client"?`<button class="btn" data-act="weeklyHere">Weekly update for this</button>`:""}${canEditMtg({companyId:v.co, clientId:v.cl==="_co"?"":v.cl||"", teamId:v.tm||""})?`<button class="btn" data-act="newMtg">Minutes</button>`:""}${S.canCreate||S.role==="client"?`<button class="btn pri" data-act="new">New action</button>`:""}</div></div>
   ${kpiStrip(stats(scoped), true)}
   <section class="panel">
     <div class="filters">
@@ -828,11 +884,11 @@ function blankDraft(){
 }
 function openDrawer(id){
   closeComments();
-  if (id){ const a = S.actions.find(x=>x.id===id); if(!a) return; D = JSON.parse(JSON.stringify(a)); D.isNew=false; D.recur = D.recur || {freq:"none",next:"",lead:1}; D._orig = JSON.parse(JSON.stringify(a)); subscribeComments(id); }
+  if (id){ const a = S.actions.find(x=>x.id===id); if(!a) return; markSeen(id); D = JSON.parse(JSON.stringify(a)); D.isNew=false; D.recur = D.recur || {freq:"none",next:"",lead:1}; D._orig = JSON.parse(JSON.stringify(a)); subscribeComments(id); }
   else D = blankDraft();
   renderDrawer();
 }
-function closeDrawer(){ closeComments(); D = null; $("#drawerHost").innerHTML = ""; }
+function closeDrawer(){ const had = !!D || !!M; M = null; closeComments(); D = null; $("#drawerHost").innerHTML = ""; if (had && S.structureLoaded && S.actionsLoaded) render(); }
 function closeComments(){ if (S.commentsUnsub){ S.commentsUnsub(); S.commentsUnsub=null; } S.comments=[]; }
 function subscribeComments(id){
   if (!S.db) return;
@@ -890,6 +946,7 @@ function renderDrawer(){
   }
   if (!D.isNew && !cl_ && D.createdByClient) alerts.push(`<div class="callout" style="background:var(--blue-bg);color:var(--blue);box-shadow:none">Raised by ${h(pname(D.createdBy))} (client). They see this item and every update marked visible to client. Keep at least one team member on it.</div>`);
   if (!D.isNew){
+    if (d.open && D.status==="Blocked") alerts.push(`<div class="callout red">⛔ <b>Blocked</b>${D.blockedNote?`: “${h(D.blockedNote)}”`:""}${D.blockedBy?` (${h(pname(D.blockedBy))}${D.blockedAt?", "+h(fmtTime(D.blockedAt)):""})`:""}. Post an update when it's cleared and set the status back to In progress.</div>`);
     if (d.overdue) alerts.push(`<div class="callout red">Past its due date by ${diffDays(today(),D.due)} days. Update the next best action and date, or revise the due date with a reason in the trail.</div>`);
     if (D.closeRequested && d.open) alerts.push(`<div class="callout" style="background:var(--green-bg);color:var(--green);box-shadow:none">${h(pname(D.closeRequested.by))} asked to close this on ${fmt(D.closeRequested.at)}: “${h(D.closeRequested.note||"")}”. ${D._orig.accountable===S.meId||D._full?"Set the status to Done to close it, or post a comment if more is needed.":"The Accountable person will confirm."}</div>`);
     if (D.lastRequestAt && d.open && S.role!=="client") alerts.push(`<div class="callout">Update reminder emailed on ${fmt(D.lastRequestAt)}${D.lastRequestTo&&D.lastRequestTo.length?` to ${h(D.lastRequestTo.map(pname).join(", "))}`:""}.</div>`);
@@ -991,7 +1048,7 @@ async function addSub(btn){
   } catch(e){ toast(writeErr(e)); btn.disabled = false; }
 }
 function composeHTML(){
-  if (S.role==="client") return `<div class="compose"><textarea class="inp" id="c-text" rows="3" placeholder="Write a comment or question for the team"></textarea><div class="rowx"><span class="hint">Your comment is visible to the Expenova team on this item.</span><button class="btn pri sm" data-act="post" style="margin-left:auto">Post comment</button></div></div>`;
+  if (S.role==="client") return `<div class="compose"><textarea class="inp" id="c-text" rows="3" placeholder="Write a comment or question for the team"></textarea><div class="rowx"><label class="chk blkchk"><input type="checkbox" id="c-blocker"> ⛔ This is a blocker</label><span class="hint">${isClientOwn(D._orig||D)?"Visible to anyone who can see this item.":"Your comment is visible to the team on this item."}</span><button class="btn pri sm" data-act="post" style="margin-left:auto">Post comment</button></div></div>`;
   if (!D._lite) CKIND = "note";
   const share = clientSharingOn(D) && D.sharedWithClient;
   const onBehalf = S.people.filter(p=>p.active!==false).map(p=>`<option value="${h(p.id)}">On behalf of ${h(p.name)}</option>`).join("");
@@ -1001,6 +1058,7 @@ function composeHTML(){
       ${D._lite?`<div class="seg" role="group" aria-label="Entry type"><button type="button" class="${CKIND==="update"?"on":""}" data-act="ckind" data-k="update">Progress update</button><button type="button" class="${CKIND==="note"?"on":""}" data-act="ckind" data-k="note">Comment</button></div>`:""}
       ${D._full?`<select class="inp" id="c-by" aria-label="Posted for"><option value="">Posted by me</option>${onBehalf}</select>`:""}
       ${share?`<label class="chk"><input type="checkbox" id="c-client"> Visible to client</label>`:""}
+      <label class="chk blkchk" title="${D._lite||canEditA(D._orig||D)?"Highlights this entry in red and sets the item to Blocked":"Highlights this entry in red; the item's owner sets the status"}"><input type="checkbox" id="c-blocker"> ⛔ This is a blocker</label>
       <button class="btn pri sm" data-act="post" style="margin-left:auto">Post</button>
     </div></div>`;
 }
@@ -1013,7 +1071,7 @@ async function renderTrail(){
     const author = person(c.authorId)?.name || "Someone";
     const who = c.via==="email" ? `<b>${h(pname(c.onBehalfOf)||"Email reply")}</b> <span>· by email${c.fromEmail?` (${h(c.fromEmail)})`:""}</span>` : c.onBehalfOf ? `<b>${h(pname(c.onBehalfOf))}</b> <span>(logged by ${h(author)})</span>` : c.authorId ? `<b>${h(author)}</b>` : `<b>Tracker</b>`;
     const kind = c.kind==="update" ? "Progress update" : c.kind==="system" ? "Change" : "Comment";
-    return `<div class="ev ${h(c.kind)}"><div class="who">${who} · ${kind} · ${h(fmtTime(c.at))}${c.visibleToClient?` · <span class="chip blue">client-visible</span>`:""}</div><div class="txt">${h(c.text)}</div></div>`;
+    return `<div class="ev ${h(c.kind)} ${c.blocker?"blocker":""}"><div class="who">${c.blocker?`<span class="chip red">⛔ Blocker</span> `:""}${who} · ${kind} · ${h(fmtTime(c.at))}${c.visibleToClient?` · <span class="chip blue">client-visible</span>`:""}</div><div class="txt">${h(c.text)}</div></div>`;
   }).join("");
 }
 
@@ -1099,21 +1157,24 @@ function writeErr(e){
   return "Could not save — " + (e && e.message || "try again");
 }
 async function addComment(actionId, c){
-  return S.db.doc("actions/"+actionId).collection("comments").add({kind:c.kind, text:c.text, at:nowISO(), authorId:S.meId||null, onBehalfOf:c.onBehalfOf||null, visibleToClient:!!c.visibleToClient});
+  return S.db.doc("actions/"+actionId).collection("comments").add({kind:c.kind, text:c.text, at:nowISO(), authorId:S.meId||null, onBehalfOf:c.onBehalfOf||null, visibleToClient:!!c.visibleToClient, blocker:!!c.blocker});
 }
 async function postComment(){
   const text = ($("#c-text").value||"").trim(); if (!text){ toast("Write the update first."); return; }
-  const by = $("#c-by")?.value || null; const vis = !!$("#c-client")?.checked;
+  const by = $("#c-by")?.value || null; const vis = !!$("#c-client")?.checked; const blocker = !!$("#c-blocker")?.checked;
   const btn = document.querySelector('[data-act="post"]'); btn.disabled = true;
   try {
-    await addComment(D.id, {kind:CKIND, text, onBehalfOf:by, visibleToClient:vis});
+    await addComment(D.id, {kind:S.role==="client"?"note":CKIND, text, onBehalfOf:by, visibleToClient:vis, blocker});
+    const canStatus = (D._lite || canEditA(D._orig||D)) && !CLOSED.includes((D._orig||D).status);
+    if (blocker && canStatus){ D.status = "Blocked"; if (D._orig) D._orig.status = "Blocked"; const st = $("#f-status"); if (st) st.value = "Blocked"; }
+    if ($("#c-blocker")) $("#c-blocker").checked = false;
     if (CKIND === "update" && D._lite){
       const patch = {lastUpdateAt: nowISO(), lastUpdateText: text, lastUpdateBy: by || null};
       if (vis) patch.lastClientUpdate = text;
       await S.db.doc("actions/"+D.id).update(patch);
       D.lastUpdateAt = patch.lastUpdateAt; D._orig.lastUpdateAt = patch.lastUpdateAt;
     }
-    $("#c-text").value = ""; toast(CKIND==="update" && D._lite ? "Progress update posted" : "Comment posted");
+    $("#c-text").value = ""; toast(blocker ? (canStatus ? "Blocker posted · item marked Blocked" : "Blocker posted · the item's owner has been flagged") : CKIND==="update" && D._lite ? "Progress update posted" : "Comment posted");
   } catch(e){ toast(writeErr(e)); }
   btn.disabled = false;
 }
@@ -1168,18 +1229,21 @@ function buildReport(){
   const sec = (title, list, fn=li) => list.length ? `<h3>${h(title)} (${list.length})</h3><ul>${list.map(fn).join("")}</ul>` : "";
   const secT = (title, list) => list.length ? `\n${title.toUpperCase()} (${list.length})\n${list.map(liT).join("\n")}\n` : "";
   const greet = client ? `<p>Dear team,</p><p>Here is this week's status on the open action items between Expenova and ${h(cl(sc.co,sc.cl)?.name||"you")} for the week ${fmt(start)} – ${fmt(end)}.</p>` : `<p>Hi all,</p><p>Weekly action tracker update for <b>${h(label)}</b>, week ${fmt(start)} – ${fmt(end)}.</p>`;
-  const table = `<table><tr><th>Open</th><th>Late</th><th>P1/P2</th><th>Closed in period</th><th>New in period</th></tr><tr><td>${s.open}</td><td>${s.overdue}</td><td>${s.p12}</td><td>${closed.length}</td><td>${created.length}</td></tr></table>`;
+  const table = `<table><tr><th>Open</th><th>Late</th><th>Blocked</th><th>P1/P2</th><th>Closed in period</th><th>New in period</th></tr><tr><td>${s.open}</td><td>${s.overdue}</td><td>${s.blocked}</td><td>${s.p12}</td><td>${closed.length}</td><td>${created.length}</td></tr></table>`;
   const pendLi = a => `<li><b>${h(a.ref)} · ${h(a.title)}</b> — update from ${h((a.responsible||[]).map(pname).join(", ")||"owner")} is ${derive(a).since} days old (asked every ${a.updateEvery} days)</li>`;
   const recLi = a => `<li><b>${h(a.ref)} · ${h(a.title)}</b> — ${h(freqLabel(a.recur.freq).toLowerCase())}, next on ${fmt(a.recur.next)}</li>`;
+  const blocked = openA.filter(a=>a.status==="Blocked");
+  const blkLi = a => `<li><b>${h(a.ref)} · ${h(a.title)}</b>${multi?` [${h(containerLabel(a))}]`:""}${!client&&a.blockedNote?` — ${h(a.blockedNote)}`:""}<br>Owner ${h(pname(a.accountable))}</li>`;
   let body = `<div><h2>${client?"Weekly status update":"Weekly action update"} — ${h(label)}</h2>${greet}${table}`
     + sec("Closed in this period", closed, a=>`<li><b>${h(a.ref)} · ${h(a.title)}</b>${multi?` [${h(containerLabel(a))}]`:""} — ${h(a.closureNote||"Completed")}<br>Closed ${fmt(closedDay(a))} · Owner ${h(pname(a.accountable))}${a.due&&!noDue(a)?(closedDay(a)>a.due?` · ${diffDays(closedDay(a),a.due)} days after due date`:" · on time"):""}</li>`)
-    + sec("Past due date", overdue) + sec("Priority focus (P1/P2)", focus) + sec("Coming up in the next 7 days", coming)
+    + sec("Blocked", blocked, blkLi) + sec("Past due date", overdue) + sec("Priority focus (P1/P2)", focus) + sec("Coming up in the next 7 days", coming)
     + sec("Recurring items coming up", recurring, recLi)
     + (pending.length ? `<h3>Updates still pending (${pending.length})</h3><ul>${pending.map(pendLi).join("")}</ul><p>Owners, please post your progress update in the tracker before the next review.</p>` : "")
     + (openA.length||closed.length ? "" : `<p>No open or closed items in this period.</p>`)
     + `<p>${client?"Please reply with any changes in priority or dates.":"Reply on this thread or post in the tracker for any correction."}</p><p>Regards,<br>Amit</p></div>`;
-  let text = `${client?"Weekly status update":"Weekly action update"} — ${label}\nWeek ${fmt(start)} – ${fmt(end)}\n\nOpen ${s.open} · Late ${s.overdue} · P1/P2 ${s.p12} · Closed this week ${closed.length} · New ${created.length}\n`
+  let text = `${client?"Weekly status update":"Weekly action update"} — ${label}\nWeek ${fmt(start)} – ${fmt(end)}\n\nOpen ${s.open} · Late ${s.overdue} · Blocked ${s.blocked} · P1/P2 ${s.p12} · Closed this week ${closed.length} · New ${created.length}\n`
     + (closed.length?`\nCLOSED IN THIS PERIOD (${closed.length})\n${closed.map(a=>`- ${a.ref} · ${a.title}${multi?` [${containerLabel(a)}]`:""} — ${a.closureNote||"Completed"} (closed ${fmt(closedDay(a))})`).join("\n")}\n`:"")
+    + (blocked.length?`\nBLOCKED (${blocked.length})\n${blocked.map(a=>`- ${a.ref} · ${a.title}${!client&&a.blockedNote?` — ${a.blockedNote}`:""}`).join("\n")}\n`:"")
     + secT("Past due date", overdue) + secT("Priority focus (P1/P2)", focus) + secT("Coming up in the next 7 days", coming)
     + (recurring.length?`\nRECURRING ITEMS COMING UP\n${recurring.map(a=>`- ${a.ref} · ${a.title} — next ${fmt(a.recur.next)}`).join("\n")}\n`:"")
     + (pending.length?`\nUPDATES STILL PENDING\n${pending.map(a=>`- ${a.ref} · ${a.title} — ${(a.responsible||[]).map(pname).join(", ")}`).join("\n")}\n`:"")
@@ -1366,7 +1430,7 @@ function buildSlides(sc){
   const slides = [];
   const stat = (v,k,cls) => `<div class="s-stat ${v?cls:""}"><b>${v}</b><span>${k}</span></div>`;
   slides.push(`<div class="s-kicker">${h(T.sub)} · ${fmt(today())}</div><h1 class="s-hero">${h(T.title)}</h1><div class="s-lede">Weekly action review · last week ${fmt(lw.start)} – ${fmt(lw.end)}</div>
-    <div class="s-stats">${stat(s.open,"Open","")}${stat(s.overdue,"Past due","red")}${stat(s.p12,"Open P1/P2","amber")}${stat(s.closedLast,"Closed last week","green")}${stat(s.upd,"Updates pending","amber")}</div>`);
+    <div class="s-stats">${stat(s.open,"Open","")}${stat(s.overdue,"Past due","red")}${stat(s.blocked,"Blocked","red")}${stat(s.p12,"Open P1/P2","amber")}${stat(s.closedLast,"Closed last week","green")}${stat(s.upd,"Updates pending","amber")}</div>`);
   // health slide when scope spans several containers
   const rowsFor = [];
   const add = (label, list, lvl, color) => { if (list.length) rowsFor.push({label, list, lvl, color}); };
@@ -1404,7 +1468,7 @@ function openPresent(){
       <button class="p-btn" data-act="pfull" aria-label="Full screen">Full screen</button><button class="p-btn" data-act="pclose" aria-label="Exit presentation">Done</button></div>
     <div class="p-stage-wrap" id="pWrap"><div class="p-stage" id="pStage"></div>
       <button class="p-nav prev" data-act="pprev" aria-label="Previous slide">‹</button><button class="p-nav next" data-act="pnext" aria-label="Next slide">›</button></div>
-    <div class="p-dots" id="pDots"></div></div>`;
+    <div class="p-dots" id="pDots"></div><div class="p-disc">Internal, non-commercial tool · “AXION” is an internal name only</div></div>`;
   document.body.style.overflow = "hidden";
   renderSlide(); fitStage();
 }
@@ -1481,6 +1545,163 @@ async function invite(send){
     if (r.emailed) toast("Invite emailed");
   } catch(e){ toast(e.message || "Couldn't create the invite"); }
 }
+/* ---------- meetings & minutes ---------- */
+let M = null; // minutes being edited
+const MTG_FIELDS = ["title","type","date","time","venue","companyId","clientId","teamId","attendees","guests","absent","agenda","notes","decisions","actionIds","nextMeeting","audience"];
+const canEditMtg = m => !!m && (S.role==="admin" || (S.role==="editor" && scopeAllows(m.companyId, m.clientId, m.teamId)));
+function mtgContainerLabel(m){ return containerLabel({companyId:m.companyId, clientId:m.clientId, teamId:m.teamId}); }
+function viewMeetings(){
+  const list = (S.meetings||[]).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"") || (b.createdAt||"").localeCompare(a.createdAt||""));
+  const can = S.role==="admin" || S.role==="editor";
+  const rows = list.map(m=>{ const sent = (m.sentLog||[]).length;
+    return `<div class="mrow" data-act="openMtg" data-id="${h(m.id)}" tabindex="0"><span class="cobar" style="background:${coColor(m.companyId)}"></span>
+      <div class="md"><b>${fmt(m.date)}</b><small>${h(m.time||"")}</small></div>
+      <div class="mt"><div class="t">${h(m.title||"Untitled meeting")}</div><div class="meta"><span class="chip">${h(m.type||"Meeting")}</span><span class="chip">${h(mtgContainerLabel(m))}</span>${m.audience==="client"?`<span class="chip blue">Client version</span>`:""}</div></div>
+      <div class="mc">${(m.actionIds||[]).length} actions · ${(m.attendees||[]).length} attendees</div>
+      <div class="ms">${sent?`<span class="chip green">Sent${sent>1?" ×"+sent:""}</span>`:`<span class="chip">Draft</span>`}</div></div>`; }).join("");
+  return `<div class="head"><div><div class="crumb">Communication</div><h1>Meetings &amp; minutes</h1></div>
+    <div class="actions">${can?`<button class="btn pri" data-act="newMtg">New minutes</button>`:""}</div></div>
+    <section class="panel"><header><h2>Minutes of meeting</h2><span class="sub">Record attendees, discussion, decisions and the action items agreed, then download or email the PDF</span></header>
+    ${rows?`<div class="mlist">${rows}</div>`:`<div class="empty"><b>No minutes yet</b>${can?"Press New minutes after your next meeting, or Minutes on any client or team page.":"Minutes recorded by your admin or editors appear here."}</div>`}</section>`;
+}
+function newMtg(sc){
+  const v = sc || (S.view.kind==="container" ? S.view : {});
+  const coId = v.co || companies()[0]?.id || "";
+  M = {isNew:true, title:"", type:(types().find(t=>/meeting/i.test(t))||types()[0]||"Meeting"), date:today(), time:"", venue:"", companyId:coId, clientId:v.cl && v.cl!=="_co" ? v.cl : "", teamId:v.tm||"",
+    attendees:[S.meId].filter(Boolean), guests:"", absent:"", agenda:"", notes:"", decisions:"", actionIds:[], nextMeeting:"", audience:"internal", sentLog:[]};
+  renderMtg();
+}
+function openMtg(id){ const m = (S.meetings||[]).find(x=>x.id===id); if (!m) return; closeDrawer(); M = JSON.parse(JSON.stringify(m)); M.isNew = false; renderMtg(); }
+function readMtg(){
+  if (!M) return; const v = id => { const e = $("#"+id); return e ? e.value : undefined; };
+  for (const [k,id] of [["title","m-title"],["type","m-type"],["date","m-date"],["time","m-time"],["venue","m-venue"],["guests","m-guests"],["absent","m-absent"],["agenda","m-agenda"],["notes","m-notes"],["decisions","m-decisions"],["nextMeeting","m-next"]]){ const x = v(id); if (x !== undefined) M[k] = k==="title" ? x.trim() : x; }
+  const au = document.querySelector('input[name="m-aud"]:checked'); if (au) M.audience = au.value;
+}
+function mtgPeoplePool(){ return S.people.filter(p=>p.active!==false && (p.side!=="client" ? (!p.companyId || p.companyId===M.companyId) : (M.clientId && p.clientId===M.clientId))); }
+function renderMtg(){
+  if (!M) return;
+  const ed = M.isNew ? (S.role==="admin"||S.role==="editor") : canEditMtg(M), dis = ed ? "" : "disabled";
+  const opt = (val,l,cur) => `<option value="${h(val)}" ${String(cur)===String(val)?"selected":""}>${h(l)}</option>`;
+  const c = co(M.companyId), k = cl(M.companyId, M.clientId);
+  const coSel = `<select class="inp" id="m-co" ${dis}>${companies().map(x=>opt(x.id,x.name,M.companyId)).join("")}</select>`;
+  const clSel = `<select class="inp" id="m-cl" ${dis}>${opt("","Company-level",M.clientId)}${(c?.clients||[]).map(x=>opt(x.id,x.name,M.clientId)).join("")}</select>`;
+  const tmSel = (k?.teams||[]).length ? `<label class="fld"><span>Team</span><select class="inp" id="m-tm" ${dis}>${opt("","Whole client",M.teamId)}${k.teams.map(x=>opt(x.id,x.name,M.teamId)).join("")}</select></label>` : "";
+  const pool = mtgPeoplePool();
+  const attChips = (M.attendees||[]).map(id=>`<span class="pchip ${person(id)?.side==="client"?"client":""}">${h(pname(id))}${ed?`<button type="button" data-act="mUnatt" data-id="${h(id)}" aria-label="Remove">×</button>`:""}</span>`).join("");
+  const attOpts = pool.filter(p=>!(M.attendees||[]).includes(p.id)).sort((a,b)=>(a.side==="client")-(b.side==="client") || a.name.localeCompare(b.name)).map(p=>`<option value="${h(p.id)}">${h(p.name)}${p.side==="client"?" (client)":""}</option>`).join("");
+  const inC = a => a.companyId===M.companyId && (!M.clientId || a.clientId===M.clientId) && (!M.teamId || a.teamId===M.teamId);
+  const linked = (M.actionIds||[]).map(id=>S.actions.find(a=>a.id===id)).filter(Boolean);
+  const avail = sortActions(S.actions.filter(a=>inC(a) && !CLOSED.includes(a.status) && !(M.actionIds||[]).includes(a.id)));
+  const canNewAct = S.role==="admin" || (S.role==="editor" && scopeAllows(M.companyId, M.clientId, M.teamId));
+  const sharing = !!k?.clientSharing;
+  const aRows = linked.map(a=>`<div class="subrow" data-act="open" data-id="${h(a.id)}"><span class="mono">${h(a.ref)}</span><span class="stt">${h(a.title)}</span><span class="who">${h(pname(a.accountable))}</span><span class="dt">${fmt(a.nbd)}</span><span class="st ${stClass(a.status)}">${h(a.status)}</span>${ed?`<button type="button" class="btn sm x" data-act="mUnlink" data-id="${h(a.id)}" aria-label="Remove from minutes">×</button>`:""}</div>`).join("");
+  const sent = (M.sentLog||[]).slice().reverse().map(x=>`<div class="hint">Sent ${h(fmtTime(x.at))} by ${h(pname(x.by))} to ${h([...(x.to||[]),...(x.cc||[])].join(", "))}</div>`).join("");
+  $("#drawerHost").innerHTML = `<div class="scrim" data-act="close"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="Minutes of meeting">
+    <div class="dhead"><div><div class="crumb">${M.isNew?"New minutes":"Minutes of meeting"} · ${h(mtgContainerLabel(M))}</div><h2>${h(M.title||"Untitled meeting")}</h2></div><button class="btn sm x" data-act="close">Close</button></div>
+    <div class="dbody">
+      <div class="sect"><h3>Meeting</h3>
+        <label class="fld"><span>Title</span><input class="inp" id="m-title" value="${h(M.title)}" placeholder="e.g. Customer Capital monthly governance review" ${dis}></label>
+        <div class="grid2">
+          <label class="fld"><span>Company</span>${coSel}</label><label class="fld"><span>Client</span>${clSel}</label>${tmSel}
+          <label class="fld"><span>Type</span><select class="inp" id="m-type" ${dis}>${[...new Set([...types(), M.type].filter(Boolean))].map(x=>opt(x,x,M.type)).join("")}</select></label>
+          <label class="fld"><span>Date</span><input type="date" class="inp" id="m-date" value="${h(M.date)}" ${dis}></label>
+          <label class="fld"><span>Time <em>(optional)</em></span><input type="time" class="inp" id="m-time" value="${h(M.time)}" ${dis}></label>
+          <label class="fld"><span>Venue or call</span><input class="inp" id="m-venue" value="${h(M.venue)}" placeholder="Teams, client office…" ${dis}></label>
+        </div></div>
+      <div class="sect"><h3>Attendees</h3>
+        <div class="picker">${attChips}${ed?`<select data-matt="1" aria-label="Add attendee"><option value="">+ add attendee</option>${attOpts}</select>`:""}</div>
+        <label class="fld"><span>Other attendees <em>(names or emails, comma separated)</em></span><input class="inp" id="m-guests" value="${h(M.guests)}" ${dis}></label>
+        <label class="fld"><span>Apologies <em>(optional)</em></span><input class="inp" id="m-absent" value="${h(M.absent)}" ${dis}></label>
+      </div>
+      <div class="sect"><h3>Agenda, discussion and decisions</h3>
+        <div class="hint">One point per line. Lines starting with “-” become bullets in the PDF.</div>
+        <label class="fld"><span>Agenda</span><textarea class="inp" id="m-agenda" rows="3" ${dis}>${h(M.agenda)}</textarea></label>
+        <label class="fld"><span>Discussion</span><textarea class="inp" id="m-notes" rows="6" ${dis}>${h(M.notes)}</textarea></label>
+        <label class="fld"><span>Decisions</span><textarea class="inp" id="m-decisions" rows="3" ${dis}>${h(M.decisions)}</textarea></label>
+      </div>
+      <div class="sect"><h3>Action items · ${linked.length}</h3>
+        ${linked.length?`<div class="subs">${aRows}</div>`:`<div class="hint">Add the action items agreed in the meeting. They appear in the PDF with owner, next step, dates and status.</div>`}
+        ${ed?`<div class="subadd mlink"><select class="inp" id="m-addex" aria-label="Add existing action"><option value="">Add an existing open action…</option>${avail.map(a=>`<option value="${h(a.id)}">${h(a.ref)} · ${h(a.title.slice(0,80))}</option>`).join("")}</select><button class="btn sm" data-act="mAddAll" ${avail.length?"":"disabled"}>Add all open here (${avail.filter(a=>!a.parentId).length})</button></div>`:""}
+        ${ed&&canNewAct?`<div class="hint" style="margin-top:4px">New action from this meeting</div><div class="subadd">
+          <input class="inp" id="mn-title" placeholder="New action agreed">
+          <select class="inp" id="mn-who" aria-label="Owner"><option value="">Owner…</option>${pool.filter(p=>p.side!=="client").sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${h(p.id)}">${h(p.name)}</option>`).join("")}</select>
+          <input type="date" class="inp" id="mn-due" value="${h(addDays(today(),7))}" aria-label="Due date">
+          <button class="btn sm pri" data-act="mNewAct">Add action</button></div>`:""}
+      </div>
+      <div class="sect"><h3>Next meeting</h3><input class="inp" id="m-next" value="${h(M.nextMeeting)}" placeholder="e.g. Tue 3 Nov, 15:00 on Teams" ${dis}></div>
+      <div class="sect"><h3>PDF version</h3>
+        <label class="chk"><input type="radio" name="m-aud" value="internal" ${M.audience!=="client"?"checked":""} ${dis}> Internal: all linked actions and internal updates</label>
+        <label class="chk"><input type="radio" name="m-aud" value="client" ${M.audience==="client"?"checked":""} ${dis||(sharing?"":"disabled")}> Client: only client-visible actions and updates${sharing?"":" (switch on client updates for this client first)"}</label>
+        ${noDue({companyId:M.companyId})?`<div class="hint">Due dates are left out for ${h(c?.name||"this company")}, as in other summaries.</div>`:""}
+      </div>
+      ${ed && !M.isNew ? `<div class="sect" id="mSend"><h3>Email the PDF</h3>${S.mail?`
+        <label class="fld"><span>To</span><textarea class="inp" id="ms-to" rows="2">${h(mtgRecipients().join(", "))}</textarea></label>
+        <label class="fld"><span>Cc</span><input class="inp" id="ms-cc"></label>
+        <label class="fld"><span>Subject</span><input class="inp" id="ms-subj" value="${h("Minutes of meeting: "+(M.title||"")+(M.date?" ("+fmt(M.date)+")":""))}"></label>
+        <label class="fld"><span>Message</span><textarea class="inp" id="ms-msg" rows="4">Dear all,\n\nPlease find attached the minutes of the meeting with the action items agreed. Do let me know of any corrections.\n\nRegards,\n${h(S.me?.name||"")}</textarea></label>
+        <div class="actions"><button class="btn pri" data-act="mSend">Send PDF</button><span class="hint">Replies go to you.</span></div>`:`<div class="hint">Email isn't set up on the server yet. Download the PDF and attach it to your own email.</div>`}${sent}</div>` : ""}
+    </div>
+    <div class="dfoot">${ed?`<button class="btn pri" data-act="mSave">${M.isNew?"Save minutes":"Save changes"}</button>`:""}
+      <button class="btn" data-act="mPdf">${M.isNew?"Save and download PDF":"Download PDF"}</button>
+      <button class="btn" data-act="close">Close</button>
+      ${!M.isNew && (S.role==="admin" || (M.createdBy===S.meId && ed)) ? `<button class="btn danger" data-act="mDel" style="margin-left:auto">Delete</button>`:""}</div>
+  </aside>`;
+}
+function mtgRecipients(){
+  const ids = M.audience==="client" ? M.attendees||[] : (M.attendees||[]).filter(id=>person(id)?.side!=="client");
+  const em = ids.map(id=>person(id)?.email).filter(Boolean);
+  const guests = String(M.guests||"").split(/[,;\s]+/).filter(x=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
+  return [...new Set([...em, ...guests])];
+}
+async function saveMtg(quiet){
+  readMtg();
+  if (!M.title){ toast("Give the meeting a title."); return false; }
+  if (!M.date){ toast("Add the meeting date."); return false; }
+  const data = {}; for (const f of MTG_FIELDS) data[f] = M[f] ?? null;
+  data.status = (M.sentLog||[]).length ? "Sent" : "Draft";
+  try {
+    if (M.isNew){ const ref = S.db.collection("meetings").doc(); await ref.set(data); M.id = ref.id; M.isNew = false; M.createdBy = S.meId; }
+    else await S.db.doc("meetings/"+M.id).update(data);
+    if (!quiet) toast("Minutes saved");
+    renderMtg(); return true;
+  } catch(e){ toast(writeErr(e)); return false; }
+}
+async function mtgPdf(){
+  if (M.isNew || canEditMtg(M)){ if (!(await saveMtg(true))) return; }
+  const url = `/api/meetings/${encodeURIComponent(M.id)}/pdf`;
+  const w = window.open(url, "_blank");
+  if (!w) location.href = url + "?download=1";
+}
+async function mtgSend(btn){
+  if (!(await saveMtg(true))) return;
+  const to = $("#ms-to").value, cc = $("#ms-cc").value;
+  if (!splitEmails(to).length){ toast("Add at least one recipient email."); return; }
+  btn.disabled = true;
+  try { await window.trackerApi(`/api/meetings/${encodeURIComponent(M.id)}/send`, {to, cc, subject:$("#ms-subj").value, message:$("#ms-msg").value});
+    toast("Minutes emailed with the PDF attached"); M.sentLog = [...(M.sentLog||[]), {at:nowISO(), by:S.meId, to:splitEmails(to), cc:splitEmails(cc)}]; renderMtg(); }
+  catch(e){ toast(e.message || "Couldn't send"); btn.disabled = false; }
+}
+async function mtgNewAction(btn){
+  const title = ($("#mn-title").value||"").trim(), who = $("#mn-who").value, due = $("#mn-due").value;
+  if (!title){ toast("Name the action."); return; }
+  if (!who){ toast("Choose the owner."); return; }
+  readMtg(); if (M.isNew && !(await saveMtg(true))) return;
+  const t = today();
+  const data = {title, description:`Agreed in meeting: ${M.title} (${fmt(M.date)})`, companyId:M.companyId, clientId:M.clientId||"", teamId:M.teamId||"", type:M.type, priority:"P3", status:"Not started",
+    due:due||"", nba:title, nbd: due && due < addDays(t,3) ? due : addDays(t,3), accountable:who, responsible:[who], consulted:[], informed:[], sharedWithClient:false, recur:{freq:"none", next:"", lead:1},
+    updateEvery: due && diffDays(due, t) > LONG_DAYS ? 7 : 0, source:`MOM ${fmt(M.date)} — ${M.title}`, meetingId:M.id,
+    ref: nextRef(refPrefix(M.companyId, M.clientId, M.teamId)), createdAt:nowISO(), createdBy:S.meId, lastUpdateAt:null, closedAt:null, closureNote:""};
+  btn.disabled = true;
+  try {
+    const ref = S.db.collection("actions").doc(); await ref.set(data);
+    await addComment(ref.id, {kind:"system", text:`Created from the minutes of “${M.title}” (${fmt(M.date)}). Owner: ${pname(who)}.${due?` Due ${fmt(due)}.`:""}`});
+    M.actionIds = [...(M.actionIds||[]), ref.id];
+    for (let i=0; i<30 && !S.actions.some(x=>x.id===ref.id); i++) await new Promise(r=>setTimeout(r,100));
+    await saveMtg(true); toast(`${data.ref} created and added to the minutes`);
+  } catch(e){ toast(writeErr(e)); btn.disabled = false; }
+}
+
+
 /* ---------- help ---------- */
 function helpSections(){
   const r = S.role, tags = r==="client" ? ["all","client"] : ["all","internal", ...(r==="admin"||r==="editor"?["edit"]:[]), ...(r==="admin"?["admin"]:[])];
@@ -1633,6 +1854,19 @@ document.addEventListener("click", async ev => {
     case "new": openDrawer(null); break;
     case "open": openDrawer(el.dataset.id); break;
     case "addSub": addSub(el); break;
+    case "newMtg": closeDrawer(); newMtg(); break;
+    case "openMtg": openMtg(el.dataset.id); break;
+    case "mSave": saveMtg(false); break;
+    case "mPdf": mtgPdf(); break;
+    case "mSend": mtgSend(el); break;
+    case "mNewAct": mtgNewAction(el); break;
+    case "mUnatt": readMtg(); M.attendees = (M.attendees||[]).filter(x=>x!==el.dataset.id); renderMtg(); break;
+    case "mUnlink": ev.stopPropagation(); readMtg(); M.actionIds = (M.actionIds||[]).filter(x=>x!==el.dataset.id); renderMtg(); break;
+    case "mAddAll": { readMtg(); const inC = a => a.companyId===M.companyId && (!M.clientId || a.clientId===M.clientId) && (!M.teamId || a.teamId===M.teamId);
+      const add = sortActions(S.actions.filter(a=>inC(a) && !CLOSED.includes(a.status) && !a.parentId && !(M.actionIds||[]).includes(a.id))).map(a=>a.id);
+      M.actionIds = [...(M.actionIds||[]), ...add]; renderMtg(); toast(`${add.length} actions added`); break; }
+    case "mDel": { if (el.dataset.armed!=="1"){ el.dataset.armed="1"; el.textContent="Press again to delete"; return; }
+      try { await S.db.doc("meetings/"+M.id).delete(); toast("Minutes deleted"); closeDrawer(); } catch(e){ toast(writeErr(e)); } break; }
     case "close": closeDrawer(); break;
     case "save": saveDraft(); break;
     case "cycle": cycleDone(); break;
@@ -1702,6 +1936,15 @@ document.addEventListener("change", ev => {
   if (t.id==="acc-role"){ const v = t.value; $("#acc-help").textContent = ROLE_HELP[v]; $("#acc-scopes-wrap").hidden = !["editor","contributor"].includes(v); return; }
   if (t.id==="w-scope"){ S.wk.scope = t.value; S.wk.toTouched = S.wk.subjTouched = false; render(); return; }
   if (t.id==="w-end"){ S.wk.weekEnd = t.value || today(); S.wk.subjTouched = false; render(); return; }
+  if (M){
+    if (t.dataset.matt){ const id = t.value; if (!id) return; readMtg(); M.attendees = [...(M.attendees||[]), id]; renderMtg(); return; }
+    if (t.id==="m-co"){ readMtg(); M.companyId = t.value; M.clientId = ""; M.teamId = ""; renderMtg(); return; }
+    if (t.id==="m-cl"){ readMtg(); M.clientId = t.value; M.teamId = ""; if (!cl(M.companyId,M.clientId)?.clientSharing) M.audience = "internal"; renderMtg(); return; }
+    if (t.id==="m-tm"){ readMtg(); M.teamId = t.value; renderMtg(); return; }
+    if (t.id==="m-addex"){ const id = t.value; if (!id) return; readMtg(); M.actionIds = [...(M.actionIds||[]), id]; renderMtg(); return; }
+    if (t.name==="m-aud"){ readMtg(); renderMtg(); return; }
+    return;
+  }
   if (!D) return;
   if (t.dataset.pick){ const r = t.dataset.pick, id = t.value; if (!id) return; if (id==="__new"){ t.value=""; quickAddPerson(r); return; } readForm(); if (r==="accountable") D.accountable = id; else D[r] = [...(D[r]||[]), id]; $("#pk-"+r).outerHTML = pickerHTML(r, D[r]); return; }
   if (t.id==="f-co"){ readForm(); D.companyId = t.value; D.clientId = ""; D.teamId = ""; renderDrawer(); return; }
@@ -1728,6 +1971,7 @@ async function boot(){
   db.doc("org/structure").onSnapshot(snap=>{ S.structure = snap.exists ? snap.data() : {companies:[], types:["Ad-hoc meeting","Deliverable"]}; S.structureLoaded = true; if (S.role==="client") S.clientName = allCompanies().flatMap(c=>c.clients||[]).find(k=>k.id===S.me.clientId)?.name || ""; dataRender(); }, fail);
   db.collection("people").onSnapshot(snap=>{ S.people = snap.docs.map(d=>({id:d.id, ...d.data()})); dataRender(); }, fail);
   db.collection("actions").onSnapshot(snap=>{ S.actions = snap.docs.map(d=>({id:d.id, ...d.data()})); const first = !S.actionsLoaded; S.actionsLoaded = true; dataRender(); if (first) openFromHash(); }, fail);
+  if (S.role!=="client") db.collection("meetings").onSnapshot(snap=>{ S.meetings = snap.docs.map(d=>({id:d.id, ...d.data()})); if (S.view.kind==="meetings") dataRender(); if (M && !M.isNew){ const f = S.meetings.find(x=>x.id===M.id); if (f) M.sentLog = f.sentLog||[]; } }, ()=>{});
   if (S.role!=="client") db.collection("updates").orderBy("at","desc").limit(40).onSnapshot(snap=>{ S.updates = snap.docs.map(d=>d.data()); if (S.view.kind==="weekly") dataRender(); }, ()=>{});
   if (S.canAdmin){ db.doc("org/settings").onSnapshot(snap=>{ S.settings = snap.exists ? snap.data() : {}; if (S.view.kind==="setup") dataRender(); }, ()=>{}); loadUsers(); }
 }

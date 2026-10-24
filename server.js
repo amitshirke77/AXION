@@ -272,17 +272,38 @@ async function write(u, path_, op, data, req) {
     }
   }
   const out = access.checkWrite(u, segs, old ? old.data : null, next, op === "delete" ? "delete" : old ? "set" : "create", ctx);
+  if (out && segs[0] === "actions" && segs.length === 2 && old && old.data.status === "Blocked" && out.status !== "Blocked") { out.blockedNote = null; out.blockedAt = null; out.blockedBy = null; } // unblocked
   const label = (out && out.privateToClient) || (old && old.data.privateToClient) ? null : (out || (old && old.data) || {}).ref || (out || (old && old.data) || {}).name || null; // private client items stay out of the admin activity log details
   if (op === "delete") { await store.deleteDoc(p); await obs.audit(req, "doc.delete", { path: p, label }); return { id: segs[segs.length - 1], deleted: true }; }
   const saved = await store.putDoc(p, out);
   const changed = old ? Object.keys({ ...old.data, ...out }).filter((k) => JSON.stringify(old.data[k] ?? null) !== JSON.stringify(out[k] ?? null)).slice(0, 30) : null;
   if (!(segs[0] === "actions" && segs.length === 4)) await obs.audit(req, old ? "doc.update" : "doc.create", { path: p, label, changed });
   else await obs.audit(req, "comment.add", { path: p, label: ctx.parent && !ctx.parent.privateToClient ? ctx.parent.ref || null : null, kind: out.kind });
+  if (segs[0] === "actions" && segs.length === 4 && !old && ctx.parent) await afterEntry(u, segs[1], out, ctx, req);
   if (segs[0] === "people" && segs.length === 2 && old && out.email !== old.data.email) {
     const usr = await store.getUser(segs[1]);
     if (usr && out.email) { try { await store.upsertUser({ ...usr, email: out.email }); } catch (_) { throw err(400, "Another login already uses that email."); } }
   }
   return { id: saved.id, version: saved.version };
+}
+// A new trail entry: record it as the item's latest activity, and a blocker marks the item Blocked
+async function afterEntry(u, actionId, c, ctx, req) {
+  const cur = await store.getDoc(`actions/${actionId}`); if (!cur) return;
+  const a = cur.data, clip = (x) => String(x || "").replace(/\s+/g, " ").trim().slice(0, 280);
+  const act = { at: c.at || new Date().toISOString(), by: c.onBehalfOf || c.authorId || null, kind: c.kind, text: clip(c.text), blocker: !!c.blocker };
+  const patch = { lastActivity: act };
+  if (c.visibleToClient || u.role === "client") patch.lastClientActivity = act;
+  const mayStatus = access.canUpdateAction(u, a) || access.isClientOwn(u, a) || (a.parentId && access.isTaskOwner(u, ctx.master));
+  let note = null;
+  if (c.blocker && mayStatus && access.isOpen(a)) {
+    patch.blockedNote = clip(c.text); patch.blockedAt = act.at; patch.blockedBy = act.by;
+    if (a.status !== "Blocked") { patch.status = "Blocked"; note = `Status ${a.status} → Blocked (blocker reported by ${(u.name || "").trim() || "a team member"})`; }
+  }
+  await store.putDoc(`actions/${actionId}`, { ...a, ...patch });
+  if (note) {
+    await store.putDoc(`actions/${actionId}/comments/${store.randomId()}`, { kind: "system", text: note, at: new Date().toISOString(), authorId: u.personId, onBehalfOf: null, visibleToClient: !!c.visibleToClient });
+    await obs.audit(req, "doc.update", { path: `actions/${actionId}`, label: a.privateToClient ? null : a.ref, changed: ["status"] });
+  }
 }
 app.post("/api/db/set", wrap(async (req, res) => res.json(await write(await needUser(req), req.body.path, "set", req.body.data, req))));
 app.post("/api/db/update", wrap(async (req, res) => res.json(await write(await needUser(req), req.body.path, "update", req.body.data, req))));
@@ -292,6 +313,53 @@ app.post("/api/db/add", wrap(async (req, res) => {
   const segs = store.splitPath(req.body.coll);
   if (!(segs.length % 2)) throw err(400, "Not a collection path.");
   res.json(await write(u, `${segs.join("/")}/${store.randomId()}`, "set", req.body.data, req));
+}));
+
+// ---------- minutes of meeting (PDF) ----------
+const mom = require("./lib/mom");
+async function momBuild(u, id) {
+  const d = await store.getDoc(`meetings/${id}`);
+  if (!d || !access.canReadMeeting(u, d.data)) throw err(404, "Those minutes don't exist or you can't see them.");
+  const m = d.data;
+  const st = ((await store.getDoc("org/structure")) || { data: {} }).data;
+  const c = (st.companies || []).find((x) => x.id === m.companyId), k = c && (c.clients || []).find((x) => x.id === m.clientId), t = k && (k.teams || []).find((x) => x.id === m.teamId);
+  const containerLabel = [c && c.name, k ? k.name : c ? "Company-level" : "", t && t.name + " team"].filter(Boolean).join(" · ");
+  const people = {}; for (const p of await store.listColl("people")) people[p.id] = p.data;
+  const all = await store.listColl("actions"), masters = {}; for (const x of all) masters[x.id] = x.data;
+  const byId = new Map(all.map((x) => [x.id, x.data]));
+  const client = m.audience === "client";
+  const actions = (m.actionIds || []).map((aid) => byId.has(aid) ? { id: aid, ...byId.get(aid) } : null)
+    .filter((a) => a && access.canReadAction(u, a, a.parentId ? masters[a.parentId] : null) && (!client || (a.sharedWithClient && !a.privateToClient)));
+  const hideDue = ((await settingsData()).hideDueFor || ["exp"]).includes(m.companyId);
+  const pdf = await mom.buildPdf(m, { actions, people, containerLabel, audience: m.audience, hideDue, preparedBy: (people[m.createdBy] || {}).name || "" });
+  const slug = mom.clean(m.title || "meeting").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "meeting";
+  return { m, d, pdf, filename: `MoM-${m.date || "undated"}-${slug}.pdf`, containerLabel, actions, people };
+}
+app.get("/api/meetings/:id/pdf", wrap(async (req, res) => {
+  const u = await needUser(req);
+  const { pdf, filename } = await momBuild(u, store.splitPath(req.params.id)[0]);
+  await obs.audit(req, "meeting.pdf", { path: `meetings/${req.params.id}` });
+  res.set({ "Content-Type": "application/pdf", "Content-Disposition": `${req.query.download ? "attachment" : "inline"}; filename="${filename}"`, "Cache-Control": "private, no-store" });
+  res.send(pdf);
+}));
+app.post("/api/meetings/:id/send", wrap(async (req, res) => {
+  const u = await needUser(req);
+  const id = store.splitPath(req.params.id)[0];
+  const { m, d, pdf, filename, containerLabel, actions } = await momBuild(u, id);
+  if (!access.canEditMeeting(u, m)) throw err(403, "Only admins and editors for this client can send minutes.");
+  if (!mail.enabled()) throw err(400, "Email isn't set up on the server yet. Download the PDF and attach it to your own email.");
+  const { to, cc, subject, message } = req.body || {};
+  const esc = (x) => String(x || "").replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+  const html = `<div style="font-family:Segoe UI,Arial,sans-serif;font-size:14px;color:#1d1d1f">
+    ${String(message || "").trim() ? `<p>${esc(message).replace(/\n/g, "<br>")}</p>` : `<p>Please find attached the minutes of the meeting.</p>`}
+    <p style="color:#6e6e73;font-size:13px"><b style="color:#1d1d1f">${esc(m.title)}</b><br>${esc(containerLabel)} · ${esc(m.date || "")}${m.time ? " · " + esc(m.time) : ""}<br>${actions.length} action item${actions.length === 1 ? "" : "s"} recorded</p>
+    <p style="color:#8e8e93;font-size:11px">Sent from AXION, an internal, non-commercial tool. "AXION" is an internal name only.</p></div>`;
+  await mail.send({ to, cc, subject: subject || `Minutes of meeting: ${m.title}`, html, replyTo: u.email, attachments: [{ filename, content: pdf, contentType: "application/pdf" }] });
+  const list = (x) => (Array.isArray(x) ? x : String(x || "").split(/[,;\s]+/)).map((s) => s.trim()).filter(Boolean);
+  const entry = { at: new Date().toISOString(), by: u.personId, to: list(to), cc: list(cc) };
+  await store.putDoc(`meetings/${id}`, { ...d.data, status: "Sent", sentLog: [...(d.data.sentLog || []), entry].slice(-50) });
+  await obs.audit(req, "meeting.sent", { path: `meetings/${id}`, label: m.title, recipients: entry.to.length + entry.cc.length });
+  res.json({ ok: true, sentLog: entry });
 }));
 
 app.post("/api/mail/send", wrap(async (req, res) => {

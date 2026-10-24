@@ -7,7 +7,7 @@
   ],
   "functions": {
     "api/index.js": {
-      "includeFiles": "{views/**,seed/**,lib/**}",
+      "includeFiles": "{views/**,seed/**,lib/**,public/monogram.png,assets/**,node_modules/pdfkit/js/data/**}",
       "maxDuration": 60
     }
   },

@@ -26,6 +26,8 @@ window.AXION_HELP = [
 <ul>
 <li><b>Overview</b> lists the shared items and their numbers. Click a number to see those items.</li>
 <li><b>Open any item</b> to read its progress updates and post a comment or question. The team sees your comment straight away on that item.</li>
+<li>Tick <b>⛔ This is a blocker</b> when something is stopping progress; your comment is highlighted in red for the team.</li>
+<li>Each item shows its latest shared update. A blue <b>New</b> marker means there's something you haven't opened yet.</li>
 <li>Only items and updates the team has marked as shared appear here, plus items you raise yourself. Internal notes are never shown.</li>
 <li>Expenova items don't show due dates in this view; the next step and its date show instead.</li>
 <li><b>Account</b> (bottom of the menu, or top-right on a phone) lets you change your password or sign out.</li>
@@ -48,6 +50,7 @@ window.AXION_HELP = [
 { id: "client-items", t: "Reading the shared items", for: ["client"], b: `
 <table class="htbl">
 <tr><td><b>Open actions</b></td><td>Shared items still in progress.</td></tr>
+<tr><td><b>Blocked</b></td><td>Items currently held up by a blocker.</td></tr>
 <tr><td><b>Open P1 / P2</b></td><td>Items marked Critical or High priority.</td></tr>
 <tr><td><b>Closed last week</b></td><td>Items completed between last Monday and Sunday.</td></tr>
 </table>
@@ -66,6 +69,7 @@ window.AXION_HELP = [
 <table class="htbl">
 <tr><td><b>Open actions</b></td><td>Everything not yet Done or Cancelled.</td></tr>
 <tr><td><b>Past due date</b></td><td>Open items whose final due date has passed.</td></tr>
+<tr><td><b>Blocked</b></td><td>Open items whose status is Blocked, usually because someone posted a blocker.</td></tr>
 <tr><td><b>Open P1 / P2</b></td><td>Open items marked Critical or High.</td></tr>
 <tr><td><b>Due in 7 days</b></td><td>Open items due within the next week.</td></tr>
 <tr><td><b>Updates pending</b></td><td>Items whose progress update is overdue (see <a data-help="updating">Updating your items</a>).</td></tr>
@@ -128,6 +132,19 @@ window.AXION_HELP = [
 <li>Editors can post <b>on behalf of</b> someone, for example after a call.</li>
 <li>On client-shared items, tick <b>Visible to client</b> to include that update in client emails and the client's view.</li>
 </ul>
+<h4>Seeing what's new</h4>
+<ul>
+<li>Every item in the lists shows its <b>latest entry</b>: whether it's a progress update, comment or blocker, who posted it, how long ago, and the first lines of the text. Progress updates have a blue edge; blockers are red.</li>
+<li>A blue <b>New</b> marker means someone else posted since you last opened that item. It clears when you open it. In Compact view it shows as a small blue dot before the title. “New” is remembered per browser.</li>
+</ul>
+<h4>Reporting a blocker</h4>
+<ul>
+<li>Tick <b>⛔ This is a blocker</b> before posting a progress update or comment.</li>
+<li>The entry is highlighted in red in the trail and on the item in every list.</li>
+<li>If you can update the item (its A, R or C, an editor or admin, or the task owner of a sub-task), its status changes to <b>Blocked</b> and the change is logged. Otherwise the red entry flags it for the owner.</li>
+<li>Blocked items count in the <b>Blocked</b> number at the top, appear in Needs attention and get their own section in the weekly update and present mode.</li>
+<li>When it's cleared, post an update and set the status back to In progress. The blocker note is removed.</li>
+</ul>
 <p><b>Update due</b> appears when an item asks for updates every N days and the last one is older than that. It counts in “Updates pending” and the weekday reminder email until someone posts one.</p>` },
 
 { id: "closing", t: "Closing an item", for: ["internal"], b: `
@@ -188,6 +205,21 @@ window.AXION_HELP = [
 <li>Press <b>Send email</b> (sent from the tracker, replies come to you) or <b>Copy email text</b> to paste into Outlook.</li>
 </ol>
 <p>Every sent or copied update is recorded in the <b>Sent log</b>. Expenova summaries leave out due dates.</p>` },
+
+{ id: "minutes", t: "Minutes of meeting (PDF)", for: ["internal"], b: `
+<p>Record a meeting and send everyone a PDF of the minutes with the action items agreed.</p>
+<ol>
+<li>Open <b>Meetings &amp; minutes</b> and press <b>New minutes</b>, or press <b>Minutes</b> on a client or team page to start with that client filled in.</li>
+<li>Enter the title, type, date, time and venue. Add attendees from the directory, plus anyone else by name or email, and any apologies.</li>
+<li>Write the <b>agenda</b>, <b>discussion</b> and <b>decisions</b>, one point per line. Lines starting with “-” become bullets.</li>
+<li><b>Action items:</b> add existing open actions one by one or with <b>Add all open here</b>, or create a <b>new action</b> on the spot (title, owner, due date). New actions are created in the tracker straight away, marked as coming from this meeting.</li>
+<li>Choose the <b>PDF version</b>: <i>Internal</i> includes every linked action and internal updates; <i>Client</i> includes only client-visible actions and updates (for clients with client updates on).</li>
+<li><b>Download PDF</b> to save or print it, or fill in <b>Email the PDF</b> and press <b>Send PDF</b>. Recipients are suggested from the attendees; replies come to you. Each send is logged on the minutes.</li>
+</ol>
+<ul>
+<li>The PDF carries the company logo (PeopleOCity, Expenova or UKB IT Solutions), the meeting details, attendees, sections and an action table with owner, next step, next best date, due date and status. Expenova minutes leave out due dates, as other summaries do.</li>
+<li>Admins and editors for that client create and edit minutes. Contributors can read and download minutes for their companies or meetings they attended. Clients don't see the Meetings page; they get the PDF by email.</li>
+</ul>` },
 
 { id: "present", t: "Present mode", for: ["all"], b: `
 <p>Press <b>Present</b> on any dashboard to show it as full-screen slides for a review meeting: the headline numbers, health of each area, closed items, late items, focus items and what's coming up.</p>
@@ -265,6 +297,14 @@ window.AXION_HELP = [
 <dt>Why is there no due date on some items?</dt><dd>For these items the team shares the next step and its planned date instead of the final due date.</dd>
 <dt>An error says “Reference …”.</dt><dd>Send the reference to your contact at the team so they can look into it.</dd>
 </dl>` },
+
+{ id: "about", t: "About AXION and disclaimer", for: ["all"], b: `
+<p>AXION is an internal tool used by PeopleOCity LLP, Expenova BPO Solutions and UKB IT Solutions to track action items with their own teams and the clients they work with.</p>
+<ul>
+<li><b>Not a commercial product.</b> AXION is not sold, licensed or offered as a product or service to anyone. Access is given by invitation, only to people working with these companies.</li>
+<li><b>Internal, non-commercial use only.</b> Client logins are provided so clients can follow and comment on shared work, and track their own items, as part of the existing relationship. They are not a paid service.</li>
+<li><b>Name.</b> “AXION” is an internal project name. It is not used as a trademark or trade name, and no claim is made to, or infringement intended of, any trademark, trade name or copyright belonging to others. Any similarity to other names or products is unintentional.</li>
+</ul>` },
 
 { id: "faq", t: "Troubleshooting", for: ["internal"], b: `
 <dl class="hfaq">
