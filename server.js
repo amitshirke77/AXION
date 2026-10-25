@@ -272,10 +272,20 @@ async function write(u, path_, op, data, req) {
     }
   }
   const out = access.checkWrite(u, segs, old ? old.data : null, next, op === "delete" ? "delete" : old ? "set" : "create", ctx);
-  if (out && segs[0] === "actions" && segs.length === 2 && old && old.data.status === "Blocked" && out.status !== "Blocked") { out.blockedNote = null; out.blockedAt = null; out.blockedBy = null; } // unblocked
+  if (out && segs[0] === "actions" && segs.length === 2 && old && old.data.status === "Blocked" && out.status !== "Blocked") { out.blockedNote = null; out.blockedAt = null; out.blockedBy = null; out.blockedBySubs = []; out.prevStatus = null; out.ownBlocked = false; } // unblocked
+  // Set to Blocked by hand (not through a sub-task): remember it, so clearing sub-tasks won't release it
+  if (out && segs[0] === "actions" && segs.length === 2 && out.status === "Blocked" && (!old || old.data.status !== "Blocked")) out.ownBlocked = true;
   const label = (out && out.privateToClient) || (old && old.data.privateToClient) ? null : (out || (old && old.data) || {}).ref || (out || (old && old.data) || {}).name || null; // private client items stay out of the admin activity log details
-  if (op === "delete") { await store.deleteDoc(p); await obs.audit(req, "doc.delete", { path: p, label }); return { id: segs[segs.length - 1], deleted: true }; }
+  if (op === "delete") {
+    await store.deleteDoc(p); await obs.audit(req, "doc.delete", { path: p, label });
+    if (segs[0] === "actions" && segs.length === 2 && old.data.parentId) await syncParentBlock(u, segs[1], old.data, false, req);
+    return { id: segs[segs.length - 1], deleted: true };
+  }
   const saved = await store.putDoc(p, out);
+  if (segs[0] === "actions" && segs.length === 2 && out.parentId) {
+    const was = !!old && old.data.status === "Blocked", now = out.status === "Blocked";
+    if (was !== now) await syncParentBlock(u, segs[1], out, now, req);
+  }
   const changed = old ? Object.keys({ ...old.data, ...out }).filter((k) => JSON.stringify(old.data[k] ?? null) !== JSON.stringify(out[k] ?? null)).slice(0, 30) : null;
   if (!(segs[0] === "actions" && segs.length === 4)) await obs.audit(req, old ? "doc.update" : "doc.create", { path: p, label, changed });
   else await obs.audit(req, "comment.add", { path: p, label: ctx.parent && !ctx.parent.privateToClient ? ctx.parent.ref || null : null, kind: out.kind });
@@ -286,6 +296,40 @@ async function write(u, path_, op, data, req) {
   }
   return { id: saved.id, version: saved.version };
 }
+// A sub-task became blocked (or stopped being blocked): reflect it on its main task.
+// The main task is set to Blocked while any sub-task is blocked, and goes back to its earlier status
+// once none are, if it was blocked only because of its sub-tasks.
+async function syncParentBlock(u, subId, sub, blocked, req) {
+  const pd = await store.getDoc(`actions/${sub.parentId}`); if (!pd) return;
+  const p = pd.data; if (!access.isOpen(p)) return;
+  const subs = new Set(p.blockedBySubs || []);
+  if (blocked) subs.add(subId); else subs.delete(subId);
+  const at = new Date().toISOString(), who = (u && u.name) || "a team member";
+  const patch = { blockedBySubs: [...subs] };
+  let note = null;
+  if (blocked) {
+    if (!p.ownBlocked) { // keep the main task's own blocker text if it has one
+      patch.blockedNote = `Sub-task ${sub.ref || ""} is blocked${sub.blockedNote ? ": " + sub.blockedNote : ""}`.slice(0, 280);
+      patch.blockedAt = at; patch.blockedBy = sub.blockedBy || (u && u.personId) || null;
+    }
+    if (p.status !== "Blocked") { patch.prevStatus = p.status; patch.status = "Blocked"; note = `Status ${p.status} → Blocked: sub-task ${sub.ref || ""} is blocked (${who})`; }
+    else note = `Sub-task ${sub.ref || ""} is also blocked (${who})`;
+  } else if (p.status === "Blocked" && (p.blockedBySubs || []).length && !subs.size && !p.ownBlocked) {
+    patch.status = p.prevStatus && p.prevStatus !== "Blocked" ? p.prevStatus : "In progress";
+    patch.prevStatus = null; patch.blockedNote = null; patch.blockedAt = null; patch.blockedBy = null;
+    note = `Status Blocked → ${patch.status}: no sub-tasks are blocked now (${sub.ref || "sub-task"} ${sub.status === "Blocked" ? "removed" : "is " + (sub.status || "updated").toLowerCase()})`;
+  } else if (!blocked && subs.size) {
+    note = `Sub-task ${sub.ref || ""} is no longer blocked; ${subs.size} other sub-task${subs.size > 1 ? "s are" : " is"} still blocked`;
+  } else if (!blocked && p.ownBlocked && p.status === "Blocked") {
+    note = `Sub-task ${sub.ref || ""} is no longer blocked; this task stays Blocked for its own blocker`;
+  }
+  if (!note) return;
+  patch.lastActivity = { at, by: (u && u.personId) || null, kind: "system", text: note, blocker: blocked };
+  await store.putDoc(`actions/${sub.parentId}`, { ...p, ...patch });
+  await store.putDoc(`actions/${sub.parentId}/comments/${store.randomId()}`, { kind: "system", text: note, at, authorId: (u && u.personId) || null, onBehalfOf: null, visibleToClient: false, blocker: blocked });
+  if (patch.status) await obs.audit(req, "doc.update", { path: `actions/${sub.parentId}`, label: p.privateToClient ? null : p.ref, changed: ["status"], via: "sub-task" });
+}
+
 // A new trail entry: record it as the item's latest activity, and a blocker marks the item Blocked
 async function afterEntry(u, actionId, c, ctx, req) {
   const cur = await store.getDoc(`actions/${actionId}`); if (!cur) return;
@@ -296,10 +340,11 @@ async function afterEntry(u, actionId, c, ctx, req) {
   const mayStatus = access.canUpdateAction(u, a) || access.isClientOwn(u, a) || (a.parentId && access.isTaskOwner(u, ctx.master));
   let note = null;
   if (c.blocker && mayStatus && access.isOpen(a)) {
-    patch.blockedNote = clip(c.text); patch.blockedAt = act.at; patch.blockedBy = act.by;
+    patch.blockedNote = clip(c.text); patch.blockedAt = act.at; patch.blockedBy = act.by; patch.ownBlocked = true;
     if (a.status !== "Blocked") { patch.status = "Blocked"; note = `Status ${a.status} → Blocked (blocker reported by ${(u.name || "").trim() || "a team member"})`; }
   }
   await store.putDoc(`actions/${actionId}`, { ...a, ...patch });
+  if (patch.status === "Blocked" && a.parentId) await syncParentBlock(u, actionId, { ...a, ...patch }, true, req);
   if (note) {
     await store.putDoc(`actions/${actionId}/comments/${store.randomId()}`, { kind: "system", text: note, at: new Date().toISOString(), authorId: u.personId, onBehalfOf: null, visibleToClient: !!c.visibleToClient });
     await obs.audit(req, "doc.update", { path: `actions/${actionId}`, label: a.privateToClient ? null : a.ref, changed: ["status"] });

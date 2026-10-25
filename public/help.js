@@ -144,6 +144,7 @@ window.AXION_HELP = [
 <li>If you can update the item (its A, R or C, an editor or admin, or the task owner of a sub-task), its status changes to <b>Blocked</b> and the change is logged. Otherwise the red entry flags it for the owner.</li>
 <li>Blocked items count in the <b>Blocked</b> number at the top, appear in Needs attention and get their own section in the weekly update and present mode.</li>
 <li>When it's cleared, post an update and set the status back to In progress. The blocker note is removed.</li>
+<li>A blocker on a sub-task also marks its main task Blocked until the sub-task is cleared (see Sub-tasks).</li>
 </ul>
 <p><b>Update due</b> appears when an item asks for updates every N days and the last one is older than that. It counts in “Updates pending” and the weekday reminder email until someone posts one.</p>` },
 
@@ -172,6 +173,7 @@ window.AXION_HELP = [
 <li>A sub-task is a full item for the person assigned: its own reference (e.g. <code>CUSTCAP-021.1</code>), status, next step and dates, update trail and reminder emails. It stays in the main task's client and team.</li>
 <li>The task owner can edit, reassign or close their sub-tasks.</li>
 <li>Sub-tasks go one level deep: a sub-task can't have sub-tasks of its own.</li>
+<li><b>Blocked sub-tasks block the main task.</b> When a sub-task is marked Blocked (by a blocker post or by setting its status), the main task switches to Blocked too, with a note naming the sub-task. When no sub-tasks are blocked any more, the main task returns to its earlier status, unless it also has a blocker of its own.</li>
 </ul>
 <h4>Closing the main task</h4>
 <p>The main task can't be set to Done or Cancelled until every sub-task is Done or Cancelled. When the last one closes, the owner is told the main task can now be closed. Adding and finishing sub-tasks is noted in the main task's trail.</p>
@@ -250,9 +252,15 @@ window.AXION_HELP = [
 </table>` },
 
 { id: "admin-people", t: "Admin: people and logins", for: ["admin"], b: `
+<h4>Finding people</h4>
+<ul>
+<li>Filter the directory by <b>company</b>, then <b>client</b>, then <b>team</b>: each list only offers what belongs to the one before it. Also filter by <b>role</b>, <b>our team or client contacts</b>, <b>login access</b> and <b>active or inactive</b>, or search by name, email or role.</li>
+<li><b>View by</b> groups the list by company, client &amp; team, role, login access or team / client.</li>
+<li>In an action item, the Accountable, Responsible, Consulted and Informed lists are grouped the same way: that team first, then the client, the company, group-wide people, and other companies last.</li>
+</ul>
 <h4>Adding someone to the directory</h4>
 <ol>
-<li>People &amp; setup → <b>Add person</b>. Enter name, email and role.</li>
+<li>People &amp; setup → <b>Add person</b>. Enter name, email and role. If you've filtered the directory to a company, client or team, the form starts with those filled in.</li>
 <li>Choose <b>internal</b> or <b>client</b>, and their company, client and team (leave company as Group-wide for people who work across companies).</li>
 <li><b>Email update requests</b>: switch off for people who shouldn't get the weekday reminder.</li>
 </ol>

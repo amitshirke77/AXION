@@ -340,7 +340,21 @@ body.compact .row .t .newdot{display:inline-block}
 .hist div{padding:10px 12px;border-top:1px solid var(--line);font-size:14px;display:flex;gap:12px;flex-wrap:wrap}
 /* setup */
 .setgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+.setstack{display:flex;flex-direction:column;gap:18px}
+.setcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:18px;align-items:start}
+.pform{background:var(--sunk);border-radius:14px;margin:0 16px 12px}
+.pformh{font-size:15px}
 .plist{display:flex;flex-direction:column;padding:0 10px 10px}
+.pfilters{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:4px 22px 8px}
+.pfilters #pf-q{grid-column:1/-1}
+.pfilters .inp{padding-top:7px;padding-bottom:7px;font-size:13.5px}
+.pfilters select:disabled{opacity:.55}
+.pgroupby{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:0 22px 10px}
+.pgroupby .seg{flex-wrap:wrap}
+.pcount{padding:0 22px 6px;font-size:12.5px;color:var(--muted)}
+.pgroup{margin:4px 0 6px}
+.pgh{display:flex;align-items:center;gap:8px;padding:8px 22px 2px;font-size:13px}
+.pgh .badge{background:var(--fill);color:var(--muted);border-radius:999px;padding:0 8px;font-size:12px}
 .prow{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1.2fr) auto;gap:12px;padding:10px 12px;border-top:1px solid var(--line);align-items:center;font-size:14px}
 .prow .em{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .form{padding:6px 22px 20px;display:flex;flex-direction:column;gap:12px}
@@ -507,7 +521,7 @@ const S = {
   view:{kind:"overview"}, filters:{q:"",status:"open",priority:"",type:"",person:"",flag:""},
   drawer:null, comments:[], commentsUnsub:null, profiles:{},
   wk:{scope:"all", audience:"internal", weekEnd:null, to:"", cc:"", subject:""},
-  setup:{editPerson:null}, closedRange:"last", closedItems:[], err:null
+  setup:{editPerson:null}, pf:{q:"", co:"", cl:"", tm:"", role:"", side:"", acc:"", status:"active", group:"company"}, closedRange:"last", closedItems:[], err:null
 };
 
 /* ---------- helpers ---------- */
@@ -905,9 +919,13 @@ function pickerHTML(role, ids){
   const sel = multi ? (ids||[]) : (ids ? [ids] : []);
   const chips = sel.map(id=>{ const p = person(id); return `<span class="pchip ${p?.side==="client"?"client":""}">${h(p?.name||"Unknown")}${D._full?`<button type="button" data-act="unpick" data-role="${role}" data-id="${h(id)}" aria-label="Remove ${h(p?.name||"")}">×</button>`:""}</span>`; }).join("");
   const pool = S.people.filter(p=>p.active!==false && !sel.includes(p.id) && (!D.parentId || sameOrgP(p, D.companyId)));
-  const rank = p => (p.clientId && p.clientId===D.clientId) ? 0 : (p.companyId===D.companyId || !p.companyId) ? 1 : 2;
-  pool.sort((a,b)=>rank(a)-rank(b) || a.name.localeCompare(b.name));
-  const opts = pool.map(p=>`<option value="${h(p.id)}">${h(p.name)}${p.role?` — ${h(p.role)}`:""}${p.side==="client"?" (client)":""}</option>`).join("");
+  // Group the list: this team, this client, this company, group-wide, then everyone else
+  const tmName = tm(D.companyId, D.clientId, D.teamId)?.name, clName = cl(D.companyId, D.clientId)?.name, coName = co(D.companyId)?.name;
+  const rank = p => D.teamId && p.teamId===D.teamId && p.clientId===D.clientId ? 0 : (p.clientId && p.clientId===D.clientId) ? 1 : (p.companyId && p.companyId===D.companyId) ? 2 : !p.companyId ? 3 : 4;
+  const label = ["Team: "+(tmName||""), "Client: "+(clName||""), "Company: "+(coName||""), "Group-wide", "Other companies"];
+  pool.sort((a,b)=>rank(a)-rank(b) || (a.side==="client")-(b.side==="client") || a.name.localeCompare(b.name));
+  const one = p => `<option value="${h(p.id)}">${h(p.name)}${p.role?` — ${h(p.role)}`:""}${p.side==="client"?" (client)":""}</option>`;
+  const opts = [0,1,2,3,4].map(r=>{ const ps = pool.filter(p=>rank(p)===r); return ps.length ? `<optgroup label="${h(label[r])}">${ps.map(one).join("")}</optgroup>` : ""; }).join("");
   const showSel = D._full && (multi || !sel.length);
   return `<div class="picker" id="pk-${role}">${chips}${showSel?`<select data-pick="${role}" aria-label="Add person"><option value="">${sel.length?"+ add":"Choose person…"}</option>${opts}${S.canCreate&&!D.parentId?`<option value="__new">+ Add someone to the directory…</option>`:""}</select>`:""}</div>`;
 }
@@ -1314,13 +1332,82 @@ async function copyWeekly(){
 }
 
 /* ---------- setup ---------- */
+/* ---------- people directory: filters and grouping ---------- */
+const pClientOpts = (coId, cur) => `<option value="">${coId?"— none —":"Pick a company first"}</option>` + ((co(coId)?.clients)||[]).map(k=>`<option value="${h(k.id)}" ${k.id===cur?"selected":""}>${h(k.name)}</option>`).join("");
+const pTeamOpts = (coId, clId, cur) => { const ts = cl(coId, clId)?.teams || []; return `<option value="">${ts.length?"— whole client —":"No teams"}</option>` + ts.map(t=>`<option value="${h(t.id)}" ${t.id===cur?"selected":""}>${h(t.name)}</option>`).join(""); };
+function personAccess(p){ const u = userOf(p.id); return !u ? "none" : !u.loginEnabled ? "off" : u.role; }
+function peopleFiltered(){
+  const f = S.pf, q = f.q.trim().toLowerCase();
+  return S.people.filter(p=>{
+    if (f.status==="active" && p.active===false) return false;
+    if (f.status==="inactive" && p.active!==false) return false;
+    if (f.side && (p.side==="client" ? "client" : "internal")!==f.side) return false;
+    if (f.co==="_g" ? !!p.companyId : f.co && p.companyId!==f.co) return false;
+    if (f.cl && p.clientId!==f.cl) return false;
+    if (f.tm && p.teamId!==f.tm) return false;
+    if (f.role && (p.role||"")!==f.role) return false;
+    if (f.acc){ const a = personAccess(p); if (f.acc==="login" ? !["admin","editor","contributor","client"].includes(a) : a!==f.acc) return false; }
+    if (q && ![p.name,p.email,p.role].join(" ").toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+function peopleGroups(list){
+  const g = S.pf.group, by = new Map();
+  const key = p => {
+    if (g==="company") return co(p.companyId)?.name || (p.companyId ? p.companyId : "Group-wide");
+    if (g==="team"){ const k = cl(p.companyId, p.clientId), t = k && (k.teams||[]).find(x=>x.id===p.teamId); return k ? `${k.name}${t?" · "+t.name+" team":""}` : (co(p.companyId)?.name ? co(p.companyId).name+" · company-level" : "Group-wide"); }
+    if (g==="role") return p.role || "No role";
+    if (g==="access"){ const a = personAccess(p); return a==="none" ? "No login" : a==="off" ? "Login switched off" : ROLE_LABEL[a] || a; }
+    if (g==="side") return p.side==="client" ? "Client contacts" : "Our team";
+    return "";
+  };
+  for (const p of list){ const k = key(p); if (!by.has(k)) by.set(k, []); by.get(k).push(p); }
+  const order = g==="company" ? k => { const i = companies().findIndex(c=>c.name===k); return i<0 ? 99 : i; } : () => 0;
+  return [...by.entries()].sort((a,b)=>order(a[0])-order(b[0]) || a[0].localeCompare(b[0]));
+}
+function peopleRowHTML(p){
+  const k = companies().flatMap(c=>c.clients||[]).find(x=>x.id===p.clientId); const t = k && (k.teams||[]).find(x=>x.id===p.teamId);
+  return `<div class="prow" ${p.active===false?'style="opacity:.55"':""}><span><b>${h(p.name)}</b>${p.side==="client"?` <span class="chip blue">client</span>`:""}<br><span class="sub rl">${h(p.role||"")}</span></span><span class="em">${p.email?h(p.email):`<span style="color:var(--amber)">No email · no update requests</span>`}${p.email&&p.emailRequests===false?` · requests off`:""}</span><span class="rl sub">${h([co(p.companyId)?.name, k?.name, t?.name].filter(Boolean).join(" · ")||"Group-wide")}</span><span>${accessChip(p)}${S.canAdmin?` <button class="btn sm" data-act="editp" data-id="${h(p.id)}">Edit</button>`:""}</span></div>`;
+}
+function peopleListHTML(){
+  const list = peopleFiltered().sort((a,b)=>(a.active===false)-(b.active===false) || a.name.localeCompare(b.name));
+  const f = S.pf, filtered = !!(f.q.trim() || f.co || f.cl || f.tm || f.role || f.side || f.acc);
+  const pool = S.people.filter(p=>f.status==="all" || (f.status==="inactive" ? p.active===false : p.active!==false)).length;
+  const inactive = S.people.filter(p=>p.active===false).length;
+  const head = `<div class="pcount">${filtered ? `Showing <b>${list.length}</b> of ${pool} · <a class="lnk" data-act="pfClear">Clear filters</a>` : `<b>${list.length}</b> ${f.status==="inactive"?"inactive ":""}people${f.status==="active"&&inactive?` · ${inactive} inactive hidden`:""}`}</div>`;
+  if (!list.length) return head + `<div class="empty"><b>No one matches</b>Change or clear the filters.</div>`;
+  if (S.pf.group==="none") return head + `<div class="plist">${list.map(peopleRowHTML).join("")}</div>`;
+  return head + peopleGroups(list).map(([k, ps])=>`<div class="pgroup"><div class="pgh"><b>${h(k)}</b><span class="badge">${ps.length}</span></div><div class="plist">${ps.map(peopleRowHTML).join("")}</div></div>`).join("");
+}
+function peopleDirHTML(){
+  const f = S.pf, opt = (v,l,cur) => `<option value="${h(v)}" ${String(cur)===String(v)?"selected":""}>${h(l)}</option>`;
+  const roles = [...new Set([...ROLES, ...S.people.map(p=>p.role).filter(Boolean)])];
+  const c = f.co && f.co!=="_g" ? co(f.co) : null, k = c ? cl(f.co, f.cl) : null;
+  const clientsOf = c ? (c.clients||[]) : [];
+  const teamsOf = k ? (k.teams||[]) : [];
+  const grp = [["company","Company"],["team","Client & team"],["role","Role"],...(S.canAdmin?[["access","Login access"]]:[]),["side","Team / client"],["none","No grouping"]];
+  return `<div class="pfilters">
+      <input type="search" class="inp" id="pf-q" placeholder="Search name, email or role" value="${h(f.q)}" aria-label="Search people">
+      <select class="inp" id="pf-co" aria-label="Company">${opt("","All companies",f.co)}${companies().map(x=>opt(x.id,x.name,f.co)).join("")}${opt("_g","Group-wide only",f.co)}</select>
+      <select class="inp" id="pf-cl" aria-label="Client" ${clientsOf.length?"":"disabled"}>${opt("",c?"All clients":"Client: pick a company",f.cl)}${clientsOf.map(x=>opt(x.id,x.name,f.cl)).join("")}</select>
+      <select class="inp" id="pf-tm" aria-label="Team" ${teamsOf.length?"":"disabled"}>${opt("",teamsOf.length?"All teams":"Team",f.tm)}${teamsOf.map(x=>opt(x.id,x.name+" team",f.tm)).join("")}</select>
+      <select class="inp" id="pf-role" aria-label="Role">${opt("","All roles",f.role)}${roles.map(r=>opt(r,r,f.role)).join("")}</select>
+      <select class="inp" id="pf-side" aria-label="Team or client">${opt("","Our team and clients",f.side)}${opt("internal","Our team",f.side)}${opt("client","Client contacts",f.side)}</select>
+      ${S.canAdmin?`<select class="inp" id="pf-acc" aria-label="Login access">${opt("","Any login access",f.acc)}${opt("login","Has a login",f.acc)}${opt("none","No login",f.acc)}${opt("admin","Admins",f.acc)}${opt("editor","Editors",f.acc)}${opt("contributor","Contributors",f.acc)}${opt("client","Client view",f.acc)}${opt("off","Login switched off",f.acc)}</select>`:""}
+      <select class="inp" id="pf-status" aria-label="Status">${opt("active","Active",f.status)}${opt("inactive","Inactive",f.status)}${opt("all","Active and inactive",f.status)}</select>
+    </div>
+    <div class="pgroupby"><span class="hint">View by</span><div class="seg" role="group" aria-label="Group people by">${grp.map(([v,l])=>`<button type="button" class="${f.group===v?"on":""}" data-act="pfGroup" data-g="${v}">${l}</button>`).join("")}</div></div>
+    <div id="plistWrap">${peopleListHTML()}</div>`;
+}
+function refreshDir(){ const el = $("#pdir"); if (el) el.innerHTML = peopleDirHTML(); }
+
 function viewSetup(){
   const e = S.setup.editPerson ? person(S.setup.editPerson) || {} : {};
   const coOpts = cur => `<option value="">Group-wide</option>` + companies().map(c=>`<option value="${h(c.id)}" ${c.id===cur?"selected":""}>${h(c.name)}</option>`).join("");
-  const allClients = companies().flatMap(c=>(c.clients||[]).map(k=>({c,k})));
-  const clOpts = cur => `<option value="">—</option>` + allClients.map(({c,k})=>`<option value="${h(k.id)}" ${k.id===cur?"selected":""}>${h(c.name)} · ${h(k.name)}</option>`).join("");
-  const tmOpts = cur => `<option value="">—</option>` + allClients.flatMap(({k})=>(k.teams||[]).map(t=>`<option value="${h(t.id)}" ${t.id===cur?"selected":""}>${h(k.name)} · ${h(t.name)}</option>`)).join("");
-  const people = S.people.slice().sort((a,b)=>(a.active===false)-(b.active===false) || a.name.localeCompare(b.name));
+  // New person: start from the directory filter (company, client, team, side)
+  if (!S.setup.editPerson){ const f = S.pf; e.companyId = e.companyId ?? (f.co && f.co!=="_g" ? f.co : ""); e.clientId = e.clientId ?? f.cl; e.teamId = e.teamId ?? f.tm; e.side = e.side ?? (f.side||"internal"); }
+  const clOpts = cur => pClientOpts(e.companyId, cur);
+  const tmOpts = cur => pTeamOpts(e.companyId, e.clientId, cur);
   const prow = p => { const k = companies().flatMap(c=>c.clients||[]).find(x=>x.id===p.clientId); const t = k && (k.teams||[]).find(x=>x.id===p.teamId);
     return `<div class="prow" ${p.active===false?'style="opacity:.55"':""}><span><b>${h(p.name)}</b>${p.side==="client"?` <span class="chip blue">client</span>`:""}<br><span class="sub rl">${h(p.role||"")}</span></span><span class="em">${p.email?h(p.email):`<span style="color:var(--amber)">No email · no update requests</span>`}${p.email&&p.emailRequests===false?` · requests off`:""}</span><span class="rl sub">${h([co(p.companyId)?.name, k?.name, t?.name].filter(Boolean).join(" · ")||"Group-wide")}</span><span>${accessChip(p)}${S.canAdmin?` <button class="btn sm" data-act="editp" data-id="${h(p.id)}">Edit</button>`:""}</span></div>`; };
   const tree = companies().map(c=>`<div class="c"><div><span class="dot" style="background:${coColor(c.id)}"></span><b>${h(c.name)}</b><span class="badge">${h(c.code)}</span></div>
@@ -1331,9 +1418,9 @@ function viewSetup(){
       ${S.canAdmin?`<div><input class="inp" id="nc-${h(c.id)}" placeholder="New client name" style="flex:1 1 160px"><input class="inp" id="ncc-${h(c.id)}" placeholder="Code" style="width:90px"><button class="btn sm" data-act="addClient" data-co="${h(c.id)}">Add client</button></div>`:""}
     </div></div>`).join("");
   return `<div class="head"><div><div class="crumb">Directory and structure</div><h1>People &amp; setup</h1></div></div>
-  <div class="setgrid">
-    <section class="panel"><header><h2>People directory</h2><span class="sub">${S.people.length} people · used in ARCI and email lists</span></header>
-      ${S.canAdmin?`<div class="form">
+  <div class="setstack">
+    <section class="panel"><header><div><h2>People directory</h2><span class="sub">${S.people.length} people · used in ARCI and email lists</span></div>${S.canAdmin&&!S.setup.editPerson&&!S.setup.showForm?`<button class="btn pri sm" data-act="showp">Add person</button>`:""}</header>
+      ${S.canAdmin&&(S.setup.editPerson||S.setup.showForm)?`<div class="form pform"><div class="pformh"><b>${S.setup.editPerson?"Edit "+h(e.name||"person"):"Add a person"}</b></div>
         <div class="grid2">
           <label class="fld"><span>Name</span><input class="inp" id="p-name" value="${h(e.name)}"></label>
           <label class="fld"><span>Email</span><input class="inp" id="p-email" type="email" value="${h(e.email)}"></label>
@@ -1345,12 +1432,12 @@ function viewSetup(){
           <label class="fld"><span>Email update requests</span><select class="inp" id="p-req"><option value="1" ${e.emailRequests!==false?"selected":""}>Send when updates are due</option><option value="0" ${e.emailRequests===false?"selected":""}>Don't email this person</option></select></label>
           <label class="fld"><span>Status</span><select class="inp" id="p-active"><option value="1" ${e.active!==false?"selected":""}>Active</option><option value="0" ${e.active===false?"selected":""}>Inactive</option></select></label>
         </div>
-        <div class="actions"><button class="btn pri" data-act="savep">${S.setup.editPerson?"Save person":"Add person"}</button>${S.setup.editPerson?`<button class="btn" data-act="cancelp">Cancel</button>`:""}</div>
+        <div class="actions"><button class="btn pri" data-act="savep">${S.setup.editPerson?"Save person":"Add person"}</button><button class="btn" data-act="cancelp">Cancel</button></div>
         ${S.setup.editPerson?accessBox(e):`<span class="hint">Add the person first, then press Edit on their row to give them a login.</span>`}
       </div>`:""}
-      <div class="plist">${people.map(prow).join("") || `<div class="empty">No people yet.</div>`}</div>
+      <div id="pdir">${peopleDirHTML()}</div>
     </section>
-    <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="setcols">
       ${S.canAdmin?settingsPanel():""}
       <section class="panel"><header><h2>Companies, clients, teams</h2><span class="sub">${S.canAdmin?"Each client is its own container":"Editors can change structure"}</span></header><div class="tree">${tree}</div></section>
       <section class="panel"><header><h2>Action types</h2></header><div class="form"><div style="display:flex;flex-wrap:wrap;gap:6px">${types().map(t=>`<span class="pchip">${h(t)}${S.canAdmin?`<button data-act="delType" data-t="${h(t)}" aria-label="Remove ${h(t)}">×</button>`:""}</span>`).join("")}</div>
@@ -1382,7 +1469,7 @@ async function savePerson(){
   try {
     if (S.setup.editPerson){ await S.db.doc("people/"+S.setup.editPerson).update(data); toast("Person saved"); }
     else { await S.db.collection("people").add(data); toast(`${name} added`); }
-    S.setup.editPerson = null; render();
+    S.setup.editPerson = null; S.setup.showForm = false; render();
   } catch(e){ toast(writeErr(e)); }
 }
 async function quickAddPerson(role){
@@ -1854,6 +1941,8 @@ document.addEventListener("click", async ev => {
     case "new": openDrawer(null); break;
     case "open": openDrawer(el.dataset.id); break;
     case "addSub": addSub(el); break;
+    case "pfGroup": S.pf.group = el.dataset.g; refreshDir(); break;
+    case "pfClear": S.pf = {...S.pf, q:"", co:"", cl:"", tm:"", role:"", side:"", acc:"", status:"active"}; refreshDir(); break;
     case "newMtg": closeDrawer(); newMtg(); break;
     case "openMtg": openMtg(el.dataset.id); break;
     case "mSave": saveMtg(false); break;
@@ -1902,7 +1991,8 @@ document.addEventListener("click", async ev => {
     case "copyClosed": copyClosed(); break;
     case "lastwk": S.wk.weekEnd = weekBounds("last").end; S.wk.subjTouched = false; render(); break;
     case "editp": S.setup.editPerson = el.dataset.id; render(); window.scrollTo(0,0); break;
-    case "cancelp": S.setup.editPerson = null; render(); break;
+    case "cancelp": S.setup.editPerson = null; S.setup.showForm = false; render(); break;
+    case "showp": S.setup.showForm = true; render(); setTimeout(()=>$("#p-name")?.focus(), 30); break;
     case "savep": savePerson(); break;
     case "addClient": { const c = el.dataset.co; const name = $("#nc-"+c).value.trim(); const code = ($("#ncc-"+c).value.trim()||name.slice(0,4)).toUpperCase().replace(/[^A-Z0-9]/g,""); if (!name){ toast("Add the client name."); return; }
       await saveStructure(s=>{ const x = s.companies.find(q=>q.id===c); x.clients = x.clients||[]; x.clients.push({id:slug(name), name, code, clientSharing:false, teams:[]}); }); break; }
@@ -1923,6 +2013,7 @@ let qT;
 document.addEventListener("input", ev => {
   const t = ev.target;
   if (t.id==="fq"){ clearTimeout(qT); qT = setTimeout(()=>{ S.filters.q = t.value; const pos = t.selectionStart; render(); const n = $("#fq"); if(n){ n.focus(); n.setSelectionRange(pos,pos);} }, 250); }
+  if (t.id==="pf-q"){ S.pf.q = t.value; const w = $("#plistWrap"); if (w) w.innerHTML = peopleListHTML(); }
   if (t.id==="hq"){ S.helpQ = t.value; const b = $("#helpBody"); if (b) b.innerHTML = helpBody(); }
   if (t.id==="w-to"){ S.wk.to = t.value; S.wk.toTouched = true; }
   if (t.id==="w-cc"){ S.wk.cc = t.value; }
@@ -1934,6 +2025,10 @@ document.addEventListener("change", ev => {
   if (fmap[t.id]){ S.filters[fmap[t.id]] = t.value; render(); return; }
   if (t.id==="mobsel"){ const v = t.value; if (v.startsWith("c:")){ const [,c,k,m] = v.split(":"); go({kind:"container", co:c, cl:k, tm:m}); } else go({kind:v}); return; }
   if (t.id==="acc-role"){ const v = t.value; $("#acc-help").textContent = ROLE_HELP[v]; $("#acc-scopes-wrap").hidden = !["editor","contributor"].includes(v); return; }
+  const pfmap = {"pf-co":"co","pf-cl":"cl","pf-tm":"tm","pf-role":"role","pf-side":"side","pf-acc":"acc","pf-status":"status"};
+  if (pfmap[t.id]){ const k = pfmap[t.id]; S.pf[k] = t.value; if (k==="co"){ S.pf.cl = ""; S.pf.tm = ""; } if (k==="cl") S.pf.tm = ""; refreshDir(); return; }
+  if (t.id==="p-co"){ const coId = t.value; $("#p-cl").innerHTML = pClientOpts(coId, ""); $("#p-tm").innerHTML = pTeamOpts(coId, "", ""); return; }
+  if (t.id==="p-cl"){ $("#p-tm").innerHTML = pTeamOpts($("#p-co").value, t.value, ""); return; }
   if (t.id==="w-scope"){ S.wk.scope = t.value; S.wk.toTouched = S.wk.subjTouched = false; render(); return; }
   if (t.id==="w-end"){ S.wk.weekEnd = t.value || today(); S.wk.subjTouched = false; render(); return; }
   if (M){
