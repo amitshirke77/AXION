@@ -96,7 +96,7 @@ window.AXION_HELP = [
 <tr><td><b>NBA: next best action</b></td><td>The single next step that moves the item forward. Required while the item is open.</td></tr>
 <tr><td><b>NBD: next best date</b></td><td>When that next step should happen. Required while open. A passed NBD shows as “NBD passed”.</td></tr>
 <tr><td><b>Final due date</b></td><td>When the whole item must be finished.</td></tr>
-<tr><td><b>Progress updates</b></td><td>How often the Responsible person must post an update: not required, or every 3, 7 or 14 days.</td></tr>
+<tr><td><b>Progress updates</b></td><td>How often the Responsible person must post an update: not required, every day, or every 3, 7 or 14 days. “Every day” counts calendar days, so on Monday an item last updated on Friday shows as due.</td></tr>
 </table>
 <h4>ARCI: who does what</h4>
 <ul>
@@ -115,7 +115,7 @@ window.AXION_HELP = [
 <li>For Expenova clients with client updates on, tick <b>Include this item in client-facing weekly updates</b> if the client should see it.</li>
 <li>Press <b>Create action</b>. The reference is assigned and the creation is logged in the update trail.</li>
 </ol>
-<p><b>Long deadlines.</b> When the due date is more than 14 days away, progress updates are required (every 7 days by default; you can choose 3 or 14). This keeps a running trail until the item is closed.</p>` },
+<p><b>Long deadlines.</b> When the due date is more than 14 days away, progress updates are required (every 7 days by default; you can choose every day, 3 or 14). This keeps a running trail until the item is closed.</p>` },
 
 { id: "updating", t: "Updating your items", for: ["internal"], b: `
 <p>Open an item by clicking it anywhere in the tracker, or from the link in a reminder email.</p>

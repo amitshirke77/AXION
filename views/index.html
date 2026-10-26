@@ -951,7 +951,7 @@ function renderDrawer(){
   const d = D.isNew ? {open:true} : derive(D);
   const long = isLong(D);
   const opt = (v,l,cur) => `<option value="${h(v)}" ${String(cur)===String(v)?"selected":""}>${h(l)}</option>`;
-  const cadOpts = long ? [[3,"Every 3 days"],[7,"Every 7 days"],[14,"Every 14 days"]] : [[0,"Not required"],[3,"Every 3 days"],[7,"Every 7 days"],[14,"Every 14 days"]];
+  const cadOpts = long ? [[1,"Every day"],[3,"Every 3 days"],[7,"Every 7 days"],[14,"Every 14 days"]] : [[0,"Not required"],[1,"Every day"],[3,"Every 3 days"],[7,"Every 7 days"],[14,"Every 14 days"]];
   if (long && !(+D.updateEvery) && D._full) D.updateEvery = 7;
   const share = clientSharingOn(D) && S.role!=="client";
   const hdr = D.isNew ? `<div><div class="crumb">New action</div><h2>Log an action item</h2></div>`
@@ -995,7 +995,7 @@ function renderDrawer(){
           ${cl_&&noDue(D)&&!own?"":`<label class="fld"><span>Final due date</span><input type="date" class="inp" id="f-due" value="${h(D.due)}" ${dis}></label>`}
           ${S.role==="client"?"":`<label class="fld"><span>Progress updates</span><select class="inp" id="f-cad" ${dis}>${cadOpts.map(([v,l])=>opt(v,l,D.updateEvery||0)).join("")}</select></label>`}
         </div>
-        <div class="hint" id="longHint" ${S.role==="client"?"hidden":""}>${long?`Long-deadline item (over ${LONG_DAYS} days): the responsible person must post a progress update at least ${D.updateEvery===3?"every 3 days":D.updateEvery===14?"every 14 days":"weekly"} until it is closed.`:`Due within ${LONG_DAYS} days, so periodic updates are optional.`}</div>
+        <div class="hint" id="longHint" ${S.role==="client"?"hidden":""}>${long?`Long-deadline item (over ${LONG_DAYS} days): the responsible person must post a progress update at least ${D.updateEvery===1?"every day":D.updateEvery===3?"every 3 days":D.updateEvery===14?"every 14 days":"weekly"} until it is closed.`:`Due within ${LONG_DAYS} days, so periodic updates are optional.`}</div>
       </div>
       <div class="sect"><h3>ARCI</h3>
         <div class="arci">
@@ -1446,7 +1446,7 @@ function viewSetup(){
         <div><b>A · R · C · I</b>Accountable owns the outcome (one person). Responsible does the work and posts updates. Consulted gives input. Informed receives the weekly update.</div>
         <div><b>NBA · NBD</b>Next best action: the single next step. Next best date: when that step should be done. Both are required on every open item.</div>
         <div><b>P1 – P4</b>P1 critical, daily follow-up. P2 this week. P3 within the month. P4 when capacity allows.</div>
-        <div><b>Long deadlines</b>Items due more than ${LONG_DAYS} days out require a progress update every 3, 7 or 14 days. Missed updates show as “Update due” and in the weekly email.</div>
+        <div><b>Long deadlines</b>Items due more than ${LONG_DAYS} days out require a progress update every day, or every 3, 7 or 14 days. Missed updates show as “Update due” and in the weekly email.</div>
         <div><b>Logins</b>Admins see everything. Editors manage actions in their assigned companies or clients. Contributors see their scope and update items where they are A, R or C. Client logins see only items shared with their client.</div>
         <div><b>Update reminders</b>When switched on, people with a login get a weekday-morning email listing their items that need an update, with a link straight to each item.</div>
         <div><b>Repeat reminders</b>Meetings and ongoing items repeat on a set frequency. Mark each cycle done; the next date rolls forward.</div>
