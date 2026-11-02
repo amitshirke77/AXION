@@ -19,6 +19,7 @@ window.AXION_HELP = [
 <li><b>People &amp; setup</b>: the people directory, structure and settings. Admins and editors manage it; contributors can look.</li>
 <li><b>Account</b> (bottom of the menu): change your password or sign out.</li>
 <li>On a phone, the menu is the drop-down at the top of the page.</li>
+<li>On a computer, press <b>⟨</b> next to the AXION name to hide the left menu and give the page the full width; press <b>☰</b> at the top left to bring it back. Your choice is remembered on that browser.</li>
 </ul>` },
 
 { id: "client-start", t: "Getting started", for: ["client"], b: `
@@ -98,6 +99,7 @@ window.AXION_HELP = [
 <tr><td><b>Final due date</b></td><td>When the whole item must be finished.</td></tr>
 <tr><td><b>Progress updates</b></td><td>How often the Responsible person must post an update: not required, every day, or every 3, 7 or 14 days. “Every day” counts calendar days, so on Monday an item last updated on Friday shows as due.</td></tr>
 </table>
+<p><b>Common items.</b> For a client with teams (like Albourne's ACR and F&amp;L), an item set to <i>Common (all teams)</i> belongs to the whole client. It shows on every team's page with a “Common · all teams” label. Anyone with access to one of that client's teams can see it, and team editors can manage it.</p>
 <h4>ARCI: who does what</h4>
 <ul>
 <li><b>A, Accountable</b>: owns the outcome. One person. Only they can close the item.</li>
@@ -206,21 +208,23 @@ window.AXION_HELP = [
 <li>Check the <b>Preview</b>: closed items with their outcomes, late items, P1/P2 focus, what's coming up, new items, pending updates and repeat meetings.</li>
 <li>Press <b>Send email</b> (sent from the tracker, replies come to you) or <b>Copy email text</b> to paste into Outlook.</li>
 </ol>
+<h4>Branded PDF for clients</h4>
+<p>Press <b>Download PDF</b> to get the same update as a branded PDF to attach to your email: the company logo (all three on the group-wide version), the week, summary numbers (open, closed, blocked, past due, P1/P2, new) and each section under its own coloured header: <span style="background:#cdeed6;padding:0 6px;border-radius:4px;color:#000">Closed</span> <span style="background:#f8c9c9;padding:0 6px;border-radius:4px;color:#000">Blocked</span> <span style="background:#fddcb5;padding:0 6px;border-radius:4px;color:#000">Past due</span> <span style="background:#ffeaa0;padding:0 6px;border-radius:4px;color:#000">Priority focus</span> <span style="background:#cfe3fb;padding:0 6px;border-radius:4px;color:#000">Coming up</span> <span style="background:#e4d8f8;padding:0 6px;border-radius:4px;color:#000">New</span> <span style="background:#cdeeea;padding:0 6px;border-radius:4px;color:#000">Recurring</span>. Choose the <i>Client</i> audience for a client: only client-visible items and updates are included, and internal blocker notes are left out.</p>
 <p>Every sent or copied update is recorded in the <b>Sent log</b>. Expenova summaries leave out due dates.</p>` },
 
 { id: "minutes", t: "Minutes of meeting (PDF)", for: ["internal"], b: `
 <p>Record a meeting and send everyone a PDF of the minutes with the action items agreed.</p>
 <ol>
 <li>Open <b>Meetings &amp; minutes</b> and press <b>New minutes</b>, or press <b>Minutes</b> on a client or team page to start with that client filled in.</li>
-<li>Enter the title, type, date, time and venue. Add attendees from the directory, plus anyone else by name or email, and any apologies.</li>
+<li>Choose the <b>company, client and team</b> the meeting is for. You're only offered the clients and teams you have rights to. Then enter the title, type, date, time and venue. Add attendees from the directory, plus anyone else by name or email, and any apologies.</li>
 <li>Write the <b>agenda</b>, <b>discussion</b> and <b>decisions</b>, one point per line. Lines starting with “-” become bullets.</li>
-<li><b>Action items:</b> add existing open actions one by one or with <b>Add all open here</b>, or create a <b>new action</b> on the spot (title, owner, due date). New actions are created in the tracker straight away, marked as coming from this meeting.</li>
+<li><b>Action items:</b> add existing open actions one by one or with <b>Add all open here</b>, or create a <b>new action</b> on the spot (title, <b>applies to</b>, owner, due date). <i>Applies to</i> can be the meeting's team or <b>Common: all teams</b> of that client. The owner can be anyone working on the client: your team, the client's other teams, colleagues in the company, or the client's own contacts. New actions are created in the tracker straight away, marked as coming from this meeting.</li>
 <li>Choose the <b>PDF version</b>: <i>Internal</i> includes every linked action and internal updates; <i>Client</i> includes only client-visible actions and updates (for clients with client updates on).</li>
 <li><b>Download PDF</b> to save or print it, or fill in <b>Email the PDF</b> and press <b>Send PDF</b>. Recipients are suggested from the attendees; replies come to you. Each send is logged on the minutes.</li>
 </ol>
 <ul>
-<li>The PDF carries the company logo (PeopleOCity, Expenova or UKB IT Solutions), the meeting details, attendees, sections and an action table with owner, next step, next best date, due date and status. Expenova minutes leave out due dates, as other summaries do.</li>
-<li>Admins and editors for that client create and edit minutes. Contributors can read and download minutes for their companies or meetings they attended. Clients don't see the Meetings page; they get the PDF by email.</li>
+<li>The PDF carries only the logo of the company the meeting is for (PeopleOCity, Expenova or UKB IT Solutions), the meeting details, attendees, sections and an action table with owner, next step, next best date, due date and status. Expenova minutes leave out due dates, as other summaries do.</li>
+<li><b>Who sees minutes:</b> admins; editors and contributors with access to that company, client or team (minutes for a team are seen by people with access to that team or the whole client); and attendees from your team. Admins and editors for that client or team create and edit them. Clients don't see the Meetings page; they get the PDF by email.</li>
 </ul>` },
 
 { id: "present", t: "Present mode", for: ["all"], b: `

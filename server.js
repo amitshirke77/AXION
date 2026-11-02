@@ -407,6 +407,22 @@ app.post("/api/meetings/:id/send", wrap(async (req, res) => {
   res.json({ ok: true, sentLog: entry });
 }));
 
+// ---------- branded weekly update (PDF) ----------
+const weekly = require("./lib/weekly");
+app.post("/api/weekly/pdf", wrap(async (req, res) => {
+  const u = await needUser(req);
+  if (!access.isInternal(u)) throw err(403, "Only the team can prepare weekly updates.");
+  const d = req.body || {};
+  const sections = (Array.isArray(d.sections) ? d.sections : []).slice(0, 12).map((sct) => ({ key: String(sct.key || ""), title: String(sct.title || ""), items: (Array.isArray(sct.items) ? sct.items : []).slice(0, 300) }));
+  if (sections.reduce((n, x) => n + x.items.length, 0) > 1500) throw err(400, "Too many items for one PDF. Choose a smaller scope.");
+  const data = { ...d, sections, companyId: ["poc", "exp", "ukb"].includes(d.companyId) ? d.companyId : "", audience: d.audience === "client" ? "client" : "internal", preparedBy: u.name || "" };
+  const pdf = await weekly.buildWeeklyPdf(data);
+  await obs.audit(req, "weekly.pdf", { label: String(d.label || "").slice(0, 120), audience: data.audience });
+  const slug = String(d.label || "update").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "update";
+  res.set({ "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="Weekly-update-${slug}-${String(d.end || "").slice(0, 10)}.pdf"`, "Cache-Control": "private, no-store" });
+  res.send(pdf);
+}));
+
 app.post("/api/mail/send", wrap(async (req, res) => {
   const u = await needUser(req);
   if (!["admin", "editor"].includes(u.role)) throw err(403, "Only admins and editors can send updates.");

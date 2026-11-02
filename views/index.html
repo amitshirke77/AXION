@@ -46,7 +46,15 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;font-weight:700
 /* sidebar */
 .nav{background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-right:1px solid var(--line);padding:22px 12px 28px max(12px, env(safe-area-inset-left,0px));position:sticky;top:0;height:100vh;overflow:auto}
 .brand{padding:2px 10px 18px;display:flex;align-items:center;gap:11px}
-.brand>div{display:flex;flex-direction:column;gap:1px;min-width:0}
+.brand>div{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.navhide{border:0;background:transparent;color:var(--muted);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;flex:none;align-self:flex-start}
+.navhide:hover{background:var(--fill);color:var(--ink)}
+.navshow{display:none;position:fixed;top:14px;left:14px;z-index:30;width:40px;height:40px;border:0;border-radius:12px;background:var(--surface);color:var(--ink);box-shadow:var(--shadow);font-size:18px;cursor:pointer;align-items:center;justify-content:center}
+.navshow:hover{background:var(--fill)}
+body.navhidden .app{grid-template-columns:minmax(0,1fr)}
+body.navhidden .nav{display:none}
+body.navhidden .navshow{display:flex}
+body.navhidden .main{padding-left:max(68px, env(safe-area-inset-left,0px))}
 .bmark{display:block;flex:none;width:42px;height:42px;border-radius:10px}
 .bmark.sm{width:34px;height:34px;border-radius:8px}
 .bmark.xs{width:26px;height:26px;border-radius:6px}
@@ -202,7 +210,10 @@ body.compact .row.sub::before{top:6px}
 .mrow .mc{color:var(--muted);font-size:13px}
 .mrow .ms{text-align:right}
 .subadd.mlink{grid-template-columns:minmax(0,1fr) auto}
+#drawerHost .subadd:has(#mn-title){grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) 140px auto}
+@media (max-width:640px){ #drawerHost .subadd:has(#mn-title){grid-template-columns:1fr 1fr} #drawerHost .subadd #mn-title{grid-column:1/-1} }
 .subrow .btn.x{padding:2px 9px}
+.subrow:has(.btn.x){grid-template-columns:auto minmax(0,1fr) auto auto auto auto}
 @media (max-width:640px){ .mrow{grid-template-columns:70px minmax(0,1fr)} .mrow .mc,.mrow .ms{display:none} .subadd.mlink{grid-template-columns:1fr} }
 footer.disc{font-size:11.5px;line-height:1.5;color:var(--faint);border-top:1px solid var(--line);padding:14px 4px 0;margin-top:8px}
 footer.disc b{color:var(--muted);font-weight:600}
@@ -378,6 +389,8 @@ body.compact .row .t .newdot{display:inline-block}
   .wk,.setgrid{grid-template-columns:minmax(0,1fr)}
 }
 @media (max-width:860px){
+  .navshow,.navhide{display:none!important}
+  body.navhidden .main{padding-left:max(16px, env(safe-area-inset-left,0px))}
   .app{grid-template-columns:minmax(0,1fr)}
   .nav{display:none}
   .mobnav{display:flex;gap:8px;align-items:center}
@@ -468,6 +481,7 @@ body.client .ic{display:none}
 </head>
 <body>
 
+<button type="button" class="navshow" data-act="navtog" aria-label="Show sidebar" title="Show sidebar">☰</button>
 <div class="app">
   <nav class="nav" id="nav" aria-label="Companies and clients"></nav>
   <main class="main"><div class="wrap" id="main">
@@ -597,8 +611,9 @@ const tm = (coId, clId, tmId) => (cl(coId,clId)?.teams||[]).find(t=>t.id===tmId)
 function containerLabel(a){
   const c = co(a.companyId); if(!c) return "Unassigned";
   const k = cl(a.companyId, a.clientId); const t = tm(a.companyId, a.clientId, a.teamId);
-  return [c.name, k ? k.name : "Company-level", t && t.name].filter(Boolean).join(" · ");
+  return [c.name, k ? k.name : "Company-level", t ? t.name : (k && (k.teams||[]).length ? "Common" : "")].filter(Boolean).join(" · ");
 }
+const isCommon = a => !!a.clientId && !a.teamId && !!((allCompanies().find(c=>c.id===a.companyId)?.clients||[]).find(k=>k.id===a.clientId)?.teams||[]).length;
 function refPrefix(coId, clId, tmId){
   const c = co(coId), k = cl(coId,clId), t = tm(coId,clId,tmId);
   if (k && t) return `${k.code}-${t.code}`;
@@ -636,7 +651,7 @@ function inScope(a, sc){
   if (sc.cl === "_co") return !a.clientId;
   if (a.clientId !== sc.cl) return false;
   if (!sc.tm) return true;
-  return a.teamId === sc.tm;
+  return a.teamId === sc.tm || !a.teamId; // common (whole-client) items show on every team of that client
 }
 function stats(list){
   const t = today(), wkAgo = addDays(t,-7);
@@ -677,7 +692,7 @@ function renderNav(){
   const vk = viewKey(S.view);
   const badge = list => { const s = stats(list); return `<span class="n">${s.overdue?`<span class="badge red" title="Overdue">${s.overdue}</span>`:""}<span class="badge" title="Open">${s.open}</span></span>`; };
   const internal = S.role && S.role!=="client";
-  let html = `<div class="brand"><img class="bmark" src="/monogram.png" alt="" width="42" height="42"><div><b>AXION</b><span>${internal?"PeopleOCity · Expenova · UKB IT":"Shared action items"}</span></div></div>
+  let html = `<div class="brand"><img class="bmark" src="/monogram.png" alt="" width="42" height="42"><div><b>AXION</b><span>${internal?"PeopleOCity · Expenova · UKB IT":"Shared action items"}</span></div><button type="button" class="navhide" data-act="navtog" aria-label="Hide sidebar" title="Hide sidebar">⟨</button></div>
   <a data-act="nav" data-v="overview" class="${vk==="overview"?"on":""}">${internal?"Overall view":"Overview"} ${badge(S.actions)}</a>
   ${internal?`<a data-act="nav" data-v="meetings" class="${vk==="meetings"?"on":""}">Meetings &amp; minutes</a>
   <a data-act="nav" data-v="weekly" class="${vk==="weekly"?"on":""}">Weekly updates</a>
@@ -751,7 +766,7 @@ function viewOverview(){
     for (const k of c.clients||[]){
       const ka = ca.filter(a=>a.clientId===k.id);
       rows += line("cl", h(k.name) + (k.clientSharing?` <span class="chip blue">Client updates on</span>`:""), ka, `data-act="nav" data-v="c" data-co="${h(c.id)}" data-cl="${h(k.id)}"`);
-      for (const t of k.teams||[]) rows += line("tm", h(t.name)+" team", ka.filter(a=>a.teamId===t.id), `data-act="nav" data-v="c" data-co="${h(c.id)}" data-cl="${h(k.id)}" data-tm="${h(t.id)}"`);
+      for (const t of k.teams||[]) rows += line("tm", h(t.name)+" team", ka.filter(a=>a.teamId===t.id || !a.teamId), `data-act="nav" data-v="c" data-co="${h(c.id)}" data-cl="${h(k.id)}" data-tm="${h(t.id)}"`);
     }
     if (!(c.clients||[]).length || ca.some(a=>!a.clientId)) rows += line("cl", "Company-level", ca.filter(a=>!a.clientId), `data-act="nav" data-v="c" data-co="${h(c.id)}" data-cl="_co"`);
   }
@@ -801,6 +816,7 @@ function rowHTML(a, compact){
   if (kids.length){ const dn = kids.filter(k=>CLOSED.includes(k.status)).length; flags.push(`<span class="chip ${dn===kids.length?"green":""}">Sub-tasks ${dn}/${kids.length}</span>`); }
   if (a.parentId) flags.push(`<span class="chip" title="Sub-task of ${h(a.parentTitle||"")}">↳ ${h(a.parentRef||"Main task")}</span>`);
   flags.push(`<span class="chip">${h(a.type||"Action")}</span>`);
+  if (isCommon(a) && S.view.kind==="container" && S.view.cl) flags.push(`<span class="chip blue" title="Applies to every team of this client">Common · all teams</span>`);
   if (S.view.kind!=="container" || !S.view.cl || (S.view.cl && !S.view.tm && a.teamId)) flags.push(`<span class="chip">${h(containerLabel(a))}</span>`);
   const resp = (a.responsible||[]).map(pname).join(", ") || "—";
   const nbd = `<div class="dt c-nbd ${d.nbdSlip?"late":""}">${fmt(a.nbd)}<small>Next best date</small></div>`;
@@ -934,7 +950,7 @@ function containerSelects(){
   const coOpts = companies().map(x=>`<option value="${h(x.id)}" ${x.id===D.companyId?"selected":""}>${h(x.name)}</option>`).join("");
   const clOpts = `<option value="">Company-level</option>` + (c?.clients||[]).map(x=>`<option value="${h(x.id)}" ${x.id===D.clientId?"selected":""}>${h(x.name)}</option>`).join("");
   const k = cl(D.companyId, D.clientId);
-  const tmOpts = `<option value="">Whole client</option>` + (k?.teams||[]).map(x=>`<option value="${h(x.id)}" ${x.id===D.teamId?"selected":""}>${h(x.name)}</option>`).join("");
+  const tmOpts = `<option value="">Common (all ${h(k?.name||"")} teams)</option>` + (k?.teams||[]).map(x=>`<option value="${h(x.id)}" ${x.id===D.teamId?"selected":""}>${h(x.name)}</option>`).join("");
   const dz = D._full && !D.parentId ? "" : "disabled";
   return `<label class="fld"><span>Company</span><select class="inp" id="f-co" ${dz}>${coOpts}</select></label>
     <label class="fld"><span>Client</span><select class="inp" id="f-cl" ${dz}>${clOpts}</select></label>
@@ -1276,14 +1292,34 @@ function buildReport(){
   } else ppl = ppl.filter(p=>p.side!=="client");
   const to = [...new Set(ppl.map(p=>p.email))];
   const subject = `${client?"Weekly status":"Weekly action update"} — ${label} — w/e ${fmt(end)}`;
-  return {body, text, to, subject, counts:{open:s.open, late:s.overdue, closed:closed.length, items: involved.length}};
+  // Structured copy of the same report for the branded PDF
+  const coName = co(sc.co)?.name || "our team";
+  const toIt = (a, extra={}) => ({ref:a.ref, title:a.title, container: multi ? containerLabel(a) : "", priority:a.priority, status:a.status, owner:pname(a.accountable),
+    doing:(a.responsible||[]).filter(x=>x!==a.accountable).map(pname).join(", "), nba:a.nba||"", nbd:a.nbd||"", due: noDue(a) ? null : a.due||null,
+    update: upd(a)||"", blockedNote: client ? null : a.blockedNote||null, ...extra});
+  const pdf = {title: client?"Weekly status update":"Weekly action update", label, start, end, audience: w.audience, companyId: sc.co||"",
+    greeting: client ? `Dear team,\n\nHere is this week's status on the open action items between ${coName} and ${cl(sc.co,sc.cl)?.name||"you"} for the week ${fmt(start)} – ${fmt(end)}.`
+                     : `Hi all,\n\nWeekly action tracker update for ${label}, week ${fmt(start)} – ${fmt(end)}.`,
+    closing: (client ? "Please reply with any changes in priority or dates." : "Reply on this thread or post in the tracker for any correction.") + `\n\nRegards,\n${S.me?.name||""}`,
+    stats:{open:s.open, closed:closed.length, blocked:s.blocked, overdue:s.overdue, p12:s.p12, created:created.length},
+    sections:[
+      {key:"closed", title:"Closed in this period", items: closed.map(a=>toIt(a,{closure:a.closureNote||"Completed", closedOn:closedDay(a)}))},
+      {key:"blocked", title:"Blocked", items: blocked.map(a=>toIt(a))},
+      {key:"overdue", title:"Past due date", items: overdue.filter(a=>a.status!=="Blocked").map(a=>toIt(a))},
+      {key:"focus", title:"Priority focus (P1 / P2)", items: focus.filter(a=>a.status!=="Blocked").map(a=>toIt(a))},
+      {key:"coming", title:"Coming up in the next 7 days", items: coming.filter(a=>a.status!=="Blocked").map(a=>toIt(a))},
+      {key:"created", title:"New in this period", items: created.filter(a=>!CLOSED.includes(a.status)).map(a=>toIt(a))},
+      {key:"recurring", title:"Recurring items coming up", items: recurring.map(a=>toIt(a,{recurNext:a.recur.next}))},
+      {key:"pending", title:"Updates still pending", items: pending.map(a=>toIt(a,{pendingNote:`Last update ${derive(a).since} days ago; asked every ${a.updateEvery} day${+a.updateEvery===1?"":"s"}`}))},
+    ]};
+  return {body, text, to, subject, pdf, counts:{open:s.open, late:s.overdue, closed:closed.length, items: involved.length}};
 }
 function viewWeekly(){
   const w = S.wk; if (!w.weekEnd) w.weekEnd = today();
   if (w.audience==="client" && !scopeAllowsClient(w.scope)) w.audience = "internal";
   const canClient = scopeAllowsClient(w.scope);
   const sopts = scopeOptions().map(([v,l])=>`<option value="${h(v)}" ${v===w.scope?"selected":""}>${h(l)}</option>`).join("");
-  const hist = S.updates.slice(0,12).map(u=>`<div><span class="mono">${fmt(u.at)}</span><span><b>${h(u.scopeLabel)}</b> · ${u.audience==="client"?"client":"internal"}</span><span class="sub">${(u.to||[]).length} recipients · ${u.items||0} items · ${u.channel==="email"?"sent":u.channel==="outlook"?"Outlook draft":"copied"}</span></div>`).join("");
+  const hist = S.updates.slice(0,12).map(u=>`<div><span class="mono">${fmt(u.at)}</span><span><b>${h(u.scopeLabel)}</b> · ${u.audience==="client"?"client":"internal"}</span><span class="sub">${(u.to||[]).length} recipients · ${u.items||0} items · ${u.channel==="email"?"sent":u.channel==="outlook"?"Outlook draft":u.channel==="pdf"?"PDF downloaded":"copied"}</span></div>`).join("");
   return `<div class="head"><div><div class="crumb">Communication</div><h1>Weekly updates</h1></div></div>
   <div class="wk">
     <section class="panel"><div class="ctl">
@@ -1294,7 +1330,7 @@ function viewWeekly(){
       <label class="fld"><span>To <em>(from Accountable, Responsible and Informed)</em></span><textarea class="inp" id="w-to" rows="3"></textarea></label>
       <label class="fld"><span>Cc</span><input class="inp" id="w-cc" value="${h(w.cc)}" placeholder="optional"></label>
       <label class="fld"><span>Subject</span><input class="inp" id="w-subj"></label>
-      <div class="actions">${S.mailOK?`<button class="btn pri" data-act="outlook">Send email</button>`:""}<button class="btn ${S.mailOK?"":"pri"}" data-act="copyw">Copy email text</button></div>
+      <div class="actions">${S.mailOK?`<button class="btn pri" data-act="outlook">Send email</button>`:""}<button class="btn" data-act="wkPdf">Download PDF</button><button class="btn ${S.mailOK?"":"pri"}" data-act="copyw">Copy email text</button></div>
       <span class="hint" id="w-note">${S.mailOK?"Sends from the tracker to the people above, with replies going to you. Check the preview first.":S.canCreate?"Copy the text into your email. Sending from here works once email is set up on the server.":"Copy the text into your email."}</span>
     </div></section>
     <section class="panel"><header><h2>Preview</h2><span class="sub" id="w-count"></span></header><div class="mail" id="w-prev"></div></section>
@@ -1311,6 +1347,19 @@ function hydrateWeekly(){
 const splitEmails = s => (s||"").split(/[\s,;]+/).map(x=>x.trim()).filter(x=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
 async function logUpdate(r, channel, to){
   try { await S.db.collection("updates").add({at:nowISO(), scope:S.wk.scope, scopeLabel:scopeLabel(S.wk.scope), audience:S.wk.audience, weekEnd:S.wk.weekEnd, to, items:r.counts.items, channel, by:S.meId||null}); } catch(_){}
+}
+async function weeklyPdf(btn){
+  const r = buildReport();
+  btn.disabled = true; const t = btn.textContent; btn.textContent = "Preparing PDF…";
+  try {
+    const res = await fetch("/api/weekly/pdf", {method:"POST", headers:{"content-type":"application/json","x-tracker":"1"}, credentials:"same-origin", body: JSON.stringify(r.pdf)});
+    if (!res.ok){ const j = await res.json().catch(()=>({})); throw new Error(j.error || "Couldn't build the PDF"); }
+    const blob = await res.blob();
+    const name = ((res.headers.get("content-disposition")||"").match(/filename="([^"]+)"/)||[])[1] || "Weekly-update.pdf";
+    const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    toast("PDF downloaded — attach it to your email"); await logUpdate(r, "pdf", []);
+  } catch(e){ toast(e.message || "Couldn't build the PDF"); }
+  btn.disabled = false; btn.textContent = t;
 }
 async function outlookDraft(btn){
   const r = buildReport(); const to = splitEmails($("#w-to").value); const cc = splitEmails($("#w-cc").value);
@@ -1635,7 +1684,31 @@ async function invite(send){
 /* ---------- meetings & minutes ---------- */
 let M = null; // minutes being edited
 const MTG_FIELDS = ["title","type","date","time","venue","companyId","clientId","teamId","attendees","guests","absent","agenda","notes","decisions","actionIds","nextMeeting","audience"];
-const canEditMtg = m => !!m && (S.role==="admin" || (S.role==="editor" && scopeAllows(m.companyId, m.clientId, m.teamId)));
+// Same rule as the server: an editor can record minutes for a company, client or team inside their scopes
+function mtgAllowed(coId, clId, tmId){
+  if (S.role==="admin") return true;
+  if (S.role!=="editor") return false;
+  const key = `${coId||""}:${clId||"_co"}:${tmId||""}`;
+  return (S.me.scopes||[]).some(sc => sc==="*" || key===sc || key.startsWith(sc+":"));
+}
+const canEditMtg = m => !!m && mtgAllowed(m.companyId, m.clientId, m.teamId);
+function mtgChoices(){
+  const out = [];
+  for (const c of allCompanies()){
+    const clients = (c.clients||[]).map(k=>({k, whole: mtgAllowed(c.id,k.id,""), teams:(k.teams||[]).filter(t=>mtgAllowed(c.id,k.id,t.id))})).filter(x=>x.whole || x.teams.length);
+    const coLevel = mtgAllowed(c.id,"","");
+    if (coLevel || clients.length) out.push({c, coLevel, clients});
+  }
+  return out;
+}
+// Keep the selection on something this person may record minutes for
+function mtgFixScope(){
+  const ch = mtgChoices(); if (!ch.length) return;
+  let c = ch.find(x=>x.c.id===M.companyId) || ch[0]; M.companyId = c.c.id;
+  let k = c.clients.find(x=>x.k.id===M.clientId);
+  if (!k && !(M.clientId==="" && c.coLevel)){ k = c.clients[0] || null; M.clientId = k ? k.k.id : ""; }
+  if (k){ if (M.teamId && !k.teams.some(t=>t.id===M.teamId)) M.teamId = ""; if (!M.teamId && !k.whole) M.teamId = k.teams[0]?.id || ""; } else M.teamId = "";
+}
 function mtgContainerLabel(m){ return containerLabel({companyId:m.companyId, clientId:m.clientId, teamId:m.teamId}); }
 function viewMeetings(){
   const list = (S.meetings||[]).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"") || (b.createdAt||"").localeCompare(a.createdAt||""));
@@ -1669,19 +1742,25 @@ function renderMtg(){
   if (!M) return;
   const ed = M.isNew ? (S.role==="admin"||S.role==="editor") : canEditMtg(M), dis = ed ? "" : "disabled";
   const opt = (val,l,cur) => `<option value="${h(val)}" ${String(cur)===String(val)?"selected":""}>${h(l)}</option>`;
-  const c = co(M.companyId), k = cl(M.companyId, M.clientId);
-  const coSel = `<select class="inp" id="m-co" ${dis}>${companies().map(x=>opt(x.id,x.name,M.companyId)).join("")}</select>`;
-  const clSel = `<select class="inp" id="m-cl" ${dis}>${opt("","Company-level",M.clientId)}${(c?.clients||[]).map(x=>opt(x.id,x.name,M.clientId)).join("")}</select>`;
-  const tmSel = (k?.teams||[]).length ? `<label class="fld"><span>Team</span><select class="inp" id="m-tm" ${dis}>${opt("","Whole client",M.teamId)}${k.teams.map(x=>opt(x.id,x.name,M.teamId)).join("")}</select></label>` : "";
+  if (ed) mtgFixScope();
+  const c = co(M.companyId) || allCompanies().find(x=>x.id===M.companyId), k = cl(M.companyId, M.clientId) || (c?.clients||[]).find(x=>x.id===M.clientId);
+  const ch = ed ? mtgChoices() : [{c, coLevel:!M.clientId, clients: k ? [{k, whole:!M.teamId, teams:(k.teams||[]).filter(t=>t.id===M.teamId)}] : []}];
+  const cc = ch.find(x=>x.c && x.c.id===M.companyId) || {clients:[], coLevel:false};
+  const kc = cc.clients.find(x=>x.k.id===M.clientId);
+  const coSel = `<select class="inp" id="m-co" ${dis}>${ch.filter(x=>x.c).map(x=>opt(x.c.id,x.c.name,M.companyId)).join("")}</select>`;
+  const clSel = `<select class="inp" id="m-cl" ${dis}>${cc.coLevel?opt("","Company-level (no client)",M.clientId):""}${cc.clients.map(x=>opt(x.k.id,x.k.name,M.clientId)).join("")}</select>`;
+  const tOpts = kc ? (kc.whole?opt("","Whole client (all teams)",M.teamId):"") + kc.teams.map(t=>opt(t.id,t.name+" team",M.teamId)).join("") : "";
+  const tmSel = `<label class="fld"><span>Team</span><select class="inp" id="m-tm" ${dis} ${kc && (k?.teams||[]).length ? "" : "disabled"}>${kc && (k?.teams||[]).length ? tOpts : opt("", M.clientId ? "This client has no teams" : "Pick a client first", "")}</select></label>`;
+  const visibleTo = `Visible to admins, to editors and contributors with access to <b>${h(mtgContainerLabel(M))}</b>, and to the attendees from your team. Client logins don't see minutes; send them the PDF.`;
   const pool = mtgPeoplePool();
   const attChips = (M.attendees||[]).map(id=>`<span class="pchip ${person(id)?.side==="client"?"client":""}">${h(pname(id))}${ed?`<button type="button" data-act="mUnatt" data-id="${h(id)}" aria-label="Remove">×</button>`:""}</span>`).join("");
   const attOpts = pool.filter(p=>!(M.attendees||[]).includes(p.id)).sort((a,b)=>(a.side==="client")-(b.side==="client") || a.name.localeCompare(b.name)).map(p=>`<option value="${h(p.id)}">${h(p.name)}${p.side==="client"?" (client)":""}</option>`).join("");
-  const inC = a => a.companyId===M.companyId && (!M.clientId || a.clientId===M.clientId) && (!M.teamId || a.teamId===M.teamId);
+  const inC = a => a.companyId===M.companyId && (!M.clientId || a.clientId===M.clientId) && (!M.teamId || a.teamId===M.teamId || !a.teamId);
   const linked = (M.actionIds||[]).map(id=>S.actions.find(a=>a.id===id)).filter(Boolean);
   const avail = sortActions(S.actions.filter(a=>inC(a) && !CLOSED.includes(a.status) && !(M.actionIds||[]).includes(a.id)));
-  const canNewAct = S.role==="admin" || (S.role==="editor" && scopeAllows(M.companyId, M.clientId, M.teamId));
+  const canNewAct = mtgScopeOptions().length > 0;
   const sharing = !!k?.clientSharing;
-  const aRows = linked.map(a=>`<div class="subrow" data-act="open" data-id="${h(a.id)}"><span class="mono">${h(a.ref)}</span><span class="stt">${h(a.title)}</span><span class="who">${h(pname(a.accountable))}</span><span class="dt">${fmt(a.nbd)}</span><span class="st ${stClass(a.status)}">${h(a.status)}</span>${ed?`<button type="button" class="btn sm x" data-act="mUnlink" data-id="${h(a.id)}" aria-label="Remove from minutes">×</button>`:""}</div>`).join("");
+  const aRows = linked.map(a=>`<div class="subrow" data-act="open" data-id="${h(a.id)}"><span class="mono">${h(a.ref)}</span><span class="stt">${isCommon(a)?`<span class="chip blue">Common</span> `:a.teamId&&a.teamId!==M.teamId?`<span class="chip">${h(tm(a.companyId,a.clientId,a.teamId)?.name||"")}</span> `:""}${h(a.title)}</span><span class="who">${h(pname(a.accountable))}</span><span class="dt">${fmt(a.nbd)}</span><span class="st ${stClass(a.status)}">${h(a.status)}</span>${ed?`<button type="button" class="btn sm x" data-act="mUnlink" data-id="${h(a.id)}" aria-label="Remove from minutes">×</button>`:""}</div>`).join("");
   const sent = (M.sentLog||[]).slice().reverse().map(x=>`<div class="hint">Sent ${h(fmtTime(x.at))} by ${h(pname(x.by))} to ${h([...(x.to||[]),...(x.cc||[])].join(", "))}</div>`).join("");
   $("#drawerHost").innerHTML = `<div class="scrim" data-act="close"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="Minutes of meeting">
     <div class="dhead"><div><div class="crumb">${M.isNew?"New minutes":"Minutes of meeting"} · ${h(mtgContainerLabel(M))}</div><h2>${h(M.title||"Untitled meeting")}</h2></div><button class="btn sm x" data-act="close">Close</button></div>
@@ -1690,6 +1769,7 @@ function renderMtg(){
         <label class="fld"><span>Title</span><input class="inp" id="m-title" value="${h(M.title)}" placeholder="e.g. Customer Capital monthly governance review" ${dis}></label>
         <div class="grid2">
           <label class="fld"><span>Company</span>${coSel}</label><label class="fld"><span>Client</span>${clSel}</label>${tmSel}
+          <div class="hint" style="grid-column:1/-1">${visibleTo}</div>
           <label class="fld"><span>Type</span><select class="inp" id="m-type" ${dis}>${[...new Set([...types(), M.type].filter(Boolean))].map(x=>opt(x,x,M.type)).join("")}</select></label>
           <label class="fld"><span>Date</span><input type="date" class="inp" id="m-date" value="${h(M.date)}" ${dis}></label>
           <label class="fld"><span>Time <em>(optional)</em></span><input type="time" class="inp" id="m-time" value="${h(M.time)}" ${dis}></label>
@@ -1711,7 +1791,8 @@ function renderMtg(){
         ${ed?`<div class="subadd mlink"><select class="inp" id="m-addex" aria-label="Add existing action"><option value="">Add an existing open action…</option>${avail.map(a=>`<option value="${h(a.id)}">${h(a.ref)} · ${h(a.title.slice(0,80))}</option>`).join("")}</select><button class="btn sm" data-act="mAddAll" ${avail.length?"":"disabled"}>Add all open here (${avail.filter(a=>!a.parentId).length})</button></div>`:""}
         ${ed&&canNewAct?`<div class="hint" style="margin-top:4px">New action from this meeting</div><div class="subadd">
           <input class="inp" id="mn-title" placeholder="New action agreed">
-          <select class="inp" id="mn-who" aria-label="Owner"><option value="">Owner…</option>${pool.filter(p=>p.side!=="client").sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${h(p.id)}">${h(p.name)}</option>`).join("")}</select>
+          ${mtgScopeSelect()}
+          ${mtgOwnerSelect()}
           <input type="date" class="inp" id="mn-due" value="${h(addDays(today(),7))}" aria-label="Due date">
           <button class="btn sm pri" data-act="mNewAct">Add action</button></div>`:""}
       </div>
@@ -1733,6 +1814,33 @@ function renderMtg(){
       <button class="btn" data-act="close">Close</button>
       ${!M.isNew && (S.role==="admin" || (M.createdBy===S.meId && ed)) ? `<button class="btn danger" data-act="mDel" style="margin-left:auto">Delete</button>`:""}</div>
   </aside>`;
+}
+// Where a new action from these minutes can go: the meeting's team, common to all the client's teams, or another team the person may edit
+const fullClient = (coId, clId) => (allCompanies().find(c=>c.id===coId)?.clients||[]).find(k=>k.id===clId) || null;
+function mtgScopeOptions(){
+  const k = fullClient(M.companyId, M.clientId);
+  const ok = (tmId) => canEditA({companyId:M.companyId, clientId:M.clientId||"", teamId:tmId||""});
+  if (!k) return ok("") ? [["", "Company-level"]] : [];
+  const teams = k.teams||[], out = [];
+  if (M.teamId && ok(M.teamId)) out.push([M.teamId, (teams.find(t=>t.id===M.teamId)?.name||"This")+" team"]);
+  if (teams.length && ok("")) out.push(["", `Common: all ${k.name} teams`]);
+  if (!teams.length && ok("")) out.push(["", k.name]);
+  for (const t of teams) if (t.id!==M.teamId && ok(t.id)) out.push([t.id, t.name+" team"]);
+  return out;
+}
+function mtgScopeSelect(){
+  const o = mtgScopeOptions(); if (o.length < 2) return `<input type="hidden" id="mn-scope" value="${h(o[0]?.[0]||"")}">`;
+  return `<select class="inp" id="mn-scope" aria-label="Applies to">${o.map(([v,l])=>`<option value="${h(v)}">${h(l)}</option>`).join("")}</select>`;
+}
+// Owners: anyone working on this client, grouped — this team, other teams, company, group-wide, client contacts
+function mtgOwnerSelect(){
+  const k = fullClient(M.companyId, M.clientId);
+  const ppl = S.people.filter(p=>p.active!==false && (p.side==="client" ? (M.clientId && p.clientId===M.clientId) : (!p.companyId || p.companyId===M.companyId)));
+  const grp = p => p.side==="client" ? 4 : (M.teamId && p.teamId===M.teamId && p.clientId===M.clientId) ? 0 : (M.clientId && p.clientId===M.clientId) ? 1 : p.companyId ? 2 : 3;
+  const tName = (k?.teams||[]).find(t=>t.id===M.teamId)?.name;
+  const labels = [`${tName||""} team`, M.teamId ? `Other ${k?.name||""} teams` : (k?.name||"This client")+" team", co(M.companyId)?.name||"Company", "Group-wide", `${k?.name||"Client"} contacts`];
+  const opts = [0,1,2,3,4].map(g=>{ const ps = ppl.filter(p=>grp(p)===g).sort((a,b)=>a.name.localeCompare(b.name)); return ps.length ? `<optgroup label="${h(labels[g])}">${ps.map(p=>`<option value="${h(p.id)}">${h(p.name)}${(()=>{ const tn = g===1 && p.teamId ? (k?.teams||[]).find(t=>t.id===p.teamId)?.name : ""; return tn ? " ("+h(tn)+")" : ""; })()}</option>`).join("")}</optgroup>` : ""; }).join("");
+  return `<select class="inp" id="mn-who" aria-label="Owner"><option value="">Owner…</option>${opts}</select>`;
 }
 function mtgRecipients(){
   const ids = M.audience==="client" ? M.attendees||[] : (M.attendees||[]).filter(id=>person(id)?.side!=="client");
@@ -1774,10 +1882,11 @@ async function mtgNewAction(btn){
   if (!who){ toast("Choose the owner."); return; }
   readMtg(); if (M.isNew && !(await saveMtg(true))) return;
   const t = today();
-  const data = {title, description:`Agreed in meeting: ${M.title} (${fmt(M.date)})`, companyId:M.companyId, clientId:M.clientId||"", teamId:M.teamId||"", type:M.type, priority:"P3", status:"Not started",
+  const teamId = $("#mn-scope") ? $("#mn-scope").value : (M.teamId||"");
+  const data = {title, description:`Agreed in meeting: ${M.title} (${fmt(M.date)})`, companyId:M.companyId, clientId:M.clientId||"", teamId, type:M.type, priority:"P3", status:"Not started",
     due:due||"", nba:title, nbd: due && due < addDays(t,3) ? due : addDays(t,3), accountable:who, responsible:[who], consulted:[], informed:[], sharedWithClient:false, recur:{freq:"none", next:"", lead:1},
     updateEvery: due && diffDays(due, t) > LONG_DAYS ? 7 : 0, source:`MOM ${fmt(M.date)} — ${M.title}`, meetingId:M.id,
-    ref: nextRef(refPrefix(M.companyId, M.clientId, M.teamId)), createdAt:nowISO(), createdBy:S.meId, lastUpdateAt:null, closedAt:null, closureNote:""};
+    ref: nextRef(refPrefix(M.companyId, M.clientId, teamId)), createdAt:nowISO(), createdBy:S.meId, lastUpdateAt:null, closedAt:null, closureNote:""};
   btn.disabled = true;
   try {
     const ref = S.db.collection("actions").doc(); await ref.set(data);
@@ -1941,6 +2050,8 @@ document.addEventListener("click", async ev => {
     case "new": openDrawer(null); break;
     case "open": openDrawer(el.dataset.id); break;
     case "addSub": addSub(el); break;
+    case "wkPdf": weeklyPdf(el); break;
+    case "navtog": { const hid = !document.body.classList.contains("navhidden"); document.body.classList.toggle("navhidden", hid); try { localStorage.setItem("axion.nav", hid ? "hidden" : "shown"); } catch(_){} break; }
     case "pfGroup": S.pf.group = el.dataset.g; refreshDir(); break;
     case "pfClear": S.pf = {...S.pf, q:"", co:"", cl:"", tm:"", role:"", side:"", acc:"", status:"active"}; refreshDir(); break;
     case "newMtg": closeDrawer(); newMtg(); break;
@@ -1951,7 +2062,7 @@ document.addEventListener("click", async ev => {
     case "mNewAct": mtgNewAction(el); break;
     case "mUnatt": readMtg(); M.attendees = (M.attendees||[]).filter(x=>x!==el.dataset.id); renderMtg(); break;
     case "mUnlink": ev.stopPropagation(); readMtg(); M.actionIds = (M.actionIds||[]).filter(x=>x!==el.dataset.id); renderMtg(); break;
-    case "mAddAll": { readMtg(); const inC = a => a.companyId===M.companyId && (!M.clientId || a.clientId===M.clientId) && (!M.teamId || a.teamId===M.teamId);
+    case "mAddAll": { readMtg(); const inC = a => a.companyId===M.companyId && (!M.clientId || a.clientId===M.clientId) && (!M.teamId || a.teamId===M.teamId || !a.teamId);
       const add = sortActions(S.actions.filter(a=>inC(a) && !CLOSED.includes(a.status) && !a.parentId && !(M.actionIds||[]).includes(a.id))).map(a=>a.id);
       M.actionIds = [...(M.actionIds||[]), ...add]; renderMtg(); toast(`${add.length} actions added`); break; }
     case "mDel": { if (el.dataset.armed!=="1"){ el.dataset.armed="1"; el.textContent="Press again to delete"; return; }
@@ -2033,8 +2144,8 @@ document.addEventListener("change", ev => {
   if (t.id==="w-end"){ S.wk.weekEnd = t.value || today(); S.wk.subjTouched = false; render(); return; }
   if (M){
     if (t.dataset.matt){ const id = t.value; if (!id) return; readMtg(); M.attendees = [...(M.attendees||[]), id]; renderMtg(); return; }
-    if (t.id==="m-co"){ readMtg(); M.companyId = t.value; M.clientId = ""; M.teamId = ""; renderMtg(); return; }
-    if (t.id==="m-cl"){ readMtg(); M.clientId = t.value; M.teamId = ""; if (!cl(M.companyId,M.clientId)?.clientSharing) M.audience = "internal"; renderMtg(); return; }
+    if (t.id==="m-co"){ readMtg(); M.companyId = t.value; M.clientId = null; M.teamId = ""; M.actionIds = []; renderMtg(); return; }
+    if (t.id==="m-cl"){ readMtg(); M.clientId = t.value; M.teamId = ""; if (!cl(M.companyId,M.clientId)?.clientSharing) M.audience = "internal"; M.actionIds = (M.actionIds||[]).filter(id=>{ const a = S.actions.find(x=>x.id===id); return a && a.clientId===M.clientId; }); renderMtg(); return; }
     if (t.id==="m-tm"){ readMtg(); M.teamId = t.value; renderMtg(); return; }
     if (t.id==="m-addex"){ const id = t.value; if (!id) return; readMtg(); M.actionIds = [...(M.actionIds||[]), id]; renderMtg(); return; }
     if (t.name==="m-aud"){ readMtg(); renderMtg(); return; }
@@ -2059,6 +2170,7 @@ async function boot(){
   S.canWrite = S.role!=="client"; S.canAdmin = S.role==="admin"; S.canCreate = S.role==="admin" || S.role==="editor";
   S.mail = !!S.me.mailEnabled; S.mailOK = S.mail && S.canCreate;
   try { S.compact = localStorage.getItem("axion.compact") === "1"; } catch(_){ S.compact = false; }
+  try { document.body.classList.toggle("navhidden", localStorage.getItem("axion.nav") === "hidden"); } catch(_){}
   document.body.classList.toggle("compact", !!S.compact);
   if (S.canAdmin) setTimeout(()=>loadStatus(true), 2500); // fills the error badge on "System status"
   const db = S.db;
