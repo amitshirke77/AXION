@@ -59,6 +59,14 @@ People & setup → press **Edit** on a person → **Login access**:
 
 Then **Email invite** (needs email set up) or **Get invite link** and send it yourself. The link lets them set a password; it works for 7 days.
 
+## Reminders and projects
+
+- **Reminders** (left menu): recurring reminders for people or whole teams (once, daily, weekdays, weekly, fortnightly, monthly, quarterly, yearly). They show in the app and are emailed at about 09:45 IST by the daily cron (`/api/cron/requests`, which now runs every day: reminders daily, update requests on weekdays only). Admins can switch reminder emails off in People & setup.
+- **Projects**: a simple planner with tasks, sub-tasks, owners, dates, dependencies, milestones, a calculated critical path (with slack) and manual critical flags, progress against plan, a timeline and a report. **Download Excel** exports the plan with a clickable index.
+- **Weekly updates** can be downloaded as a branded PDF or as an Excel workbook with a clickable index and one sheet per section.
+
+Excel files are built on the server with `exceljs`; shared schedule and planning logic is in `public/recur.js` and `public/plan.js`.
+
 ## Minutes of meeting
 
 **Meetings & minutes** (left menu) records meetings and produces a PDF: company logo, details, attendees, agenda, discussion, decisions and the action items agreed, with owner, next step, dates and status. Editors can **Download PDF** or **Send PDF**, which emails it as an attachment through the SMTP settings. New actions can be created from the minutes. Logos live in `assets/logos/` (`poc.png`, `exp.png`, `ukb.png`, matched by company id); replace a file to change a logo. The PDF is built on the server with `pdfkit` (bundled in `vercel.json`).
@@ -66,6 +74,8 @@ Then **Email invite** (needs email set up) or **Get invite link** and send it yo
 ## Help for users
 
 Everyone has a **Help** page in the left menu (and under Account). It shows only what applies to that person's access level: clients see a short guide to shared items; contributors, editors and admins get the full guide, with admin-only sections for admins. It has a search box, and `https://<your-domain>/#help` (or `#help-subtasks`, `#help-weekly`, …) opens it directly, which is handy in emails. The text lives in `public/help.js`.
+
+New people get a short guided tour the first time they sign in; it highlights each part of the screen and can be skipped or restarted at any time from Help, Account, the round **?** button or `https://<your-domain>/#tour`. The **?** button in the bottom-right corner of every page opens only the help sections for that page. The Help page starts with **New to AXION? Start here**: what the tool is for, a short glossary, a getting-started checklist that ticks itself off as the person uses the app, and a first-week guide. Tour and checklist progress is kept in each person's browser.
 
 ## Microsoft sign-in (optional)
 

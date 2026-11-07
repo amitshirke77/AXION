@@ -208,9 +208,52 @@ window.AXION_HELP = [
 <li>Check the <b>Preview</b>: closed items with their outcomes, late items, P1/P2 focus, what's coming up, new items, pending updates and repeat meetings.</li>
 <li>Press <b>Send email</b> (sent from the tracker, replies come to you) or <b>Copy email text</b> to paste into Outlook.</li>
 </ol>
+<h4>Excel version</h4>
+<p>Press <b>Download Excel</b> for the same update as a workbook. The first sheet is a clickable <b>Index</b>; each section has its own colour-coded sheet (closed in this period, blocked, past due, priority focus, coming up, new, recurring, updates pending) plus <b>All open items</b>, each with filters and a link back to the index.</p>
 <h4>Branded PDF for clients</h4>
 <p>Press <b>Download PDF</b> to get the same update as a branded PDF to attach to your email: the company logo (all three on the group-wide version), the week, summary numbers (open, closed, blocked, past due, P1/P2, new) and each section under its own coloured header: <span style="background:#cdeed6;padding:0 6px;border-radius:4px;color:#000">Closed</span> <span style="background:#f8c9c9;padding:0 6px;border-radius:4px;color:#000">Blocked</span> <span style="background:#fddcb5;padding:0 6px;border-radius:4px;color:#000">Past due</span> <span style="background:#ffeaa0;padding:0 6px;border-radius:4px;color:#000">Priority focus</span> <span style="background:#cfe3fb;padding:0 6px;border-radius:4px;color:#000">Coming up</span> <span style="background:#e4d8f8;padding:0 6px;border-radius:4px;color:#000">New</span> <span style="background:#cdeeea;padding:0 6px;border-radius:4px;color:#000">Recurring</span>. Choose the <i>Client</i> audience for a client: only client-visible items and updates are included, and internal blocker notes are left out.</p>
 <p>Every sent or copied update is recorded in the <b>Sent log</b>. Expenova summaries leave out due dates.</p>` },
+
+{ id: "reminders", t: "Reminders", for: ["internal"], b: `
+<p>Remind yourself, a colleague or a whole team about something that repeats: a weekly MIS, a monthly invoice run, a quarterly review.</p>
+<ol>
+<li>Open <b>Reminders</b> and press <b>New reminder</b>.</li>
+<li>Write what needs doing, and a note if useful.</li>
+<li>Choose how often: once, every day, every weekday, every week, every 2 weeks, every month, every quarter or every year, from a start date and, if you like, until an end date. The next dates are shown as you choose.</li>
+<li>Choose <b>who</b>: individual people and/or whole teams (a company, a client or a client's team). Team reminders go to everyone in that team, including people who join later.</li>
+<li>Keep <b>Email them on each date</b> ticked to send an email at about 9:45 AM on each date.</li>
+</ol>
+<ul>
+<li>Reminders due for you appear at the top of the <b>Overall view</b> and on the Reminders page, with a red count in the menu. Press <b>Done</b> when you've done it. Missed ones stay for 7 days.</li>
+<li>Monthly reminders set on the 29th–31st fall on the last day of shorter months.</li>
+<li>Only the person who set up a reminder (or an admin) can change it. Reminders are visible to the people they go to, the creator and admins.</li>
+<li>Admins can switch reminder emails off for everyone under People &amp; setup → Sign-in &amp; automatic emails.</li>
+</ul>` },
+
+{ id: "projects", t: "Projects (planner)", for: ["internal"], b: `
+<p>Plan a piece of work as tasks and sub-tasks with owners, dates and dependencies, and see the critical path and progress against plan.</p>
+<h4>Setting up</h4>
+<ol>
+<li>Open <b>Projects</b> and press <b>New project</b> (admins and editors). Give it a name, the company, client and team, the project owner, start and target finish.</li>
+<li>Press <b>Add task</b>. Give each task an owner, start and end dates. Tick <b>Milestone</b> for a key date.</li>
+<li>Open a task and press <b>Add sub-task</b> to break it down. A parent task takes its dates and progress from its sub-tasks.</li>
+<li>Under <b>Depends on</b>, add the tasks that must finish before this one can start.</li>
+</ol>
+<h4>Critical path</h4>
+<ul>
+<li>AXION works out the chain of dependent tasks that sets the finish date. Those tasks are marked <b>★ critical</b>: any delay on them delays the project. Other tasks show their <b>slack</b>, the days they can slip without moving the finish.</li>
+<li>You can also tick <b>Mark as critical</b> on any task you want watched closely.</li>
+<li>⚠ means a task is planned to start before something it depends on finishes. A dependency loop is flagged at the top.</li>
+</ul>
+<h4>Progress and reporting</h4>
+<ul>
+<li>Task owners update <b>status</b>, <b>progress %</b> and a note on their own tasks; the project owner and editors can change everything.</li>
+<li>The numbers at the top compare <b>% complete</b> with <b>% planned by today</b> (weighted by task length), and count late, critical-and-late and blocked tasks. Health is <i>On track</i>, <i>At risk</i> (late tasks or more than 10 points behind) or <i>Off track</i> (a critical task late or blocked).</li>
+<li><b>Timeline</b> shows the tasks as bars: critical in red, progress shaded, milestones as ◆ and today as a blue line.</li>
+<li><b>Report</b> gives a written summary (planned and earliest finish), late tasks, the critical path, what's due in the next 7 days, milestones and progress by owner.</li>
+<li><b>Download Excel</b> gives a workbook with a clickable index and sheets for the full plan, critical path, late tasks, due next 7 days, milestones and completed tasks.</li>
+<li>Projects are visible to admins, people with access to that company/client/team, the owner and anyone with a task in it. Clients don't see projects.</li>
+</ul>` },
 
 { id: "minutes", t: "Minutes of meeting (PDF)", for: ["internal"], b: `
 <p>Record a meeting and send everyone a PDF of the minutes with the action items agreed.</p>

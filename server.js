@@ -210,6 +210,7 @@ app.get("/api/rev", wrap(async (req, res) => { await needUser(req); res.json({ r
 async function ctxFor(u, segs, data) {
   const ctx = {};
   if (segs[0] === "actions" && segs.length >= 3) { const a = await store.getDoc(`actions/${segs[1]}`); ctx.parent = a ? a.data : null; }
+  if (segs[0] === "reminders") { const me = await store.getDoc(`people/${u.personId}`); ctx.me = me ? me.data : null; }
   const self = segs[0] === "actions" ? (segs.length >= 3 ? ctx.parent : data) : null;
   if (self && self.parentId) { const m = await store.getDoc(`actions/${self.parentId}`); ctx.master = m ? m.data : null; }
   if (u.role === "client") {
@@ -407,6 +408,55 @@ app.post("/api/meetings/:id/send", wrap(async (req, res) => {
   res.json({ ok: true, sentLog: entry });
 }));
 
+// ---------- reminders: mark one occurrence done (or undo) ----------
+app.post("/api/reminders/:id/done", wrap(async (req, res) => {
+  const u = await needUser(req);
+  const id = store.splitPath(req.params.id)[0];
+  const d = await store.getDoc(`reminders/${id}`);
+  const me = ((await store.getDoc(`people/${u.personId}`)) || {}).data;
+  if (!d || !access.canReadReminder(u, d.data, me)) throw err(404, "That reminder doesn't exist or isn't yours.");
+  const date = String((req.body || {}).date || "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw err(400, "bad date");
+  const log = { ...(d.data.doneLog || {}) }, who = new Set(log[date] || []);
+  if ((req.body || {}).undo) who.delete(u.personId); else who.add(u.personId);
+  if (who.size) log[date] = [...who]; else delete log[date];
+  const keys = Object.keys(log).sort(); while (keys.length > 120) delete log[keys.shift()]; // keep the log small
+  await store.putDoc(`reminders/${id}`, { ...d.data, doneLog: log });
+  res.json({ ok: true, doneLog: log });
+}));
+
+// ---------- Excel downloads ----------
+const xlsx = require("./lib/xlsx");
+const PLAN = require("./public/plan.js");
+const XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+const slugify = (x) => String(x || "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "export";
+app.post("/api/weekly/xlsx", wrap(async (req, res) => {
+  const u = await needUser(req);
+  if (!access.isInternal(u)) throw err(403, "Only the team can prepare weekly updates.");
+  const d = req.body || {};
+  const sections = (Array.isArray(d.sections) ? d.sections : []).slice(0, 14).map((sct) => ({ key: String(sct.key || ""), title: String(sct.title || "").slice(0, 60), items: (Array.isArray(sct.items) ? sct.items : []).slice(0, 2000) }));
+  const buf = await xlsx.weeklyXlsx({ ...d, sections, audience: d.audience === "client" ? "client" : "internal", preparedBy: u.name || "", multi: !!d.multi, hideDue: !!d.hideDue });
+  await obs.audit(req, "weekly.xlsx", { label: String(d.label || "").slice(0, 120), audience: d.audience });
+  res.set({ "Content-Type": XLSX_TYPE, "Content-Disposition": `attachment; filename="Weekly-update-${slugify(d.label)}-${String(d.end || "").slice(0, 10)}.xlsx"`, "Cache-Control": "private, no-store" });
+  res.send(Buffer.from(buf));
+}));
+app.get("/api/projects/:id/xlsx", wrap(async (req, res) => {
+  const u = await needUser(req);
+  const id = store.splitPath(req.params.id)[0];
+  const d = await store.getDoc(`projects/${id}`);
+  if (!d || !access.canReadProject(u, d.data)) throw err(404, "That project doesn't exist or you can't see it.");
+  const p = d.data, people = {}; for (const x of await store.listColl("people")) people[x.id] = x.data;
+  const st = ((await store.getDoc("org/structure")) || { data: {} }).data;
+  const c = (st.companies || []).find((x) => x.id === p.companyId), k = c && (c.clients || []).find((x) => x.id === p.clientId), t = k && (k.teams || []).find((x) => x.id === p.teamId);
+  const label = [c && c.name, k && k.name, t ? t.name + " team" : k && (k.teams || []).length ? "Common" : ""].filter(Boolean).join(" · ");
+  const IST = new Date(Date.now() + 5.5 * 36e5).toISOString().slice(0, 10);
+  const r = PLAN.analyse(p, IST);
+  const buf = await xlsx.projectXlsx(p, r, (pid) => (people[pid] || {}).name || "", label, u.name || "");
+  await obs.audit(req, "project.xlsx", { path: `projects/${id}`, label: p.name });
+  res.set({ "Content-Type": XLSX_TYPE, "Content-Disposition": `attachment; filename="Project-${slugify(p.name)}-${IST}.xlsx"`, "Cache-Control": "private, no-store" });
+  res.send(Buffer.from(buf));
+}));
+
 // ---------- branded weekly update (PDF) ----------
 const weekly = require("./lib/weekly");
 app.post("/api/weekly/pdf", wrap(async (req, res) => {
@@ -482,6 +532,7 @@ app.post("/api/admin/run/:job", wrap(async (req, res) => {
   if (!dryRun) await obs.audit(req, "job.run_now", { job: req.params.job });
   if (req.params.job === "requests") return res.json(await scheduler.sendUpdateRequests(APP_URL, { dryRun }));
   if (req.params.job === "digest") return res.json(await scheduler.sendDigest(APP_URL, { dryRun }));
+  if (req.params.job === "reminders") return res.json(await scheduler.sendReminders(APP_URL, { dryRun }));
   throw err(404, "Unknown job.");
 }));
 

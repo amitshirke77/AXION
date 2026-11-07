@@ -7,7 +7,7 @@
   ],
   "functions": {
     "api/index.js": {
-      "includeFiles": "{views/**,seed/**,lib/**,public/monogram.png,assets/**,node_modules/pdfkit/js/data/**}",
+      "includeFiles": "{views/**,seed/**,lib/**,public/monogram.png,public/recur.js,public/plan.js,assets/**,node_modules/pdfkit/js/data/**}",
       "maxDuration": 60
     }
   },
@@ -20,7 +20,7 @@
   "crons": [
     {
       "path": "/api/cron/requests",
-      "schedule": "15 4 * * 1-5"
+      "schedule": "15 4 * * *"
     },
     {
       "path": "/api/cron/digest",
